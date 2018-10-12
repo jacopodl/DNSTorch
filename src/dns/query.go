@@ -10,6 +10,13 @@ type Query struct {
 	Class uint16
 }
 
+func NewQuery(name string, qtype, class uint16) (*Query, error) {
+	if err := VerifyDN(name); err != nil {
+		return nil, err
+	}
+	return &Query{name, qtype, class}, nil
+}
+
 func (q *Query) Qname() []byte {
 	return Name2Qname(q.Name)
 }
