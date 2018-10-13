@@ -67,7 +67,12 @@ func Name2Qname(name string) []byte {
 }
 
 func Name2QnameN(name string, n int) []byte {
-	return Name2Qname(TruncLabel(name, n))
+	lc := CountLabel(name)
+	buf := Name2Qname(TruncLabelRight(name, n))
+	if n < lc {
+		return buf[:len(buf)-1]
+	}
+	return buf
 }
 
 func Qname2Name(buf []byte, ptr int) string {
@@ -99,7 +104,7 @@ func SplitLabel(name string) []string {
 	return labels
 }
 
-func TruncLabel(name string, n int) string {
+func truncLabel(name string, n int, left bool) string {
 	count := 0
 	i := 0
 
@@ -116,7 +121,21 @@ func TruncLabel(name string, n int) string {
 		}
 	}
 	i++
+	if left {
+		if len(name) != i {
+			i++
+		}
+		return name[i:]
+	}
 	return name[:i]
+}
+
+func TruncLabelLeft(name string, n int) string {
+	return truncLabel(name, n, true)
+}
+
+func TruncLabelRight(name string, n int) string {
+	return truncLabel(name, n, false)
 }
 
 func VerifyDN(name string) error {
