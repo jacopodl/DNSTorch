@@ -21,7 +21,7 @@ func (q *Query) Qname() []byte {
 	return Name2Qname(q.Name)
 }
 
-func (q *Query) HeaderToBytes() []byte {
+func (q *Query) headerToBytes() []byte {
 	buf := make([]byte, QUERYHDRSIZE)
 	binary.BigEndian.PutUint16(buf[:2], q.Type)
 	binary.BigEndian.PutUint16(buf[2:], q.Class)
@@ -30,11 +30,16 @@ func (q *Query) HeaderToBytes() []byte {
 
 func (q *Query) ToBytes() []byte {
 	buf := Name2Qname(q.Name)
-	hdr := make([]byte, QUERYHDRSIZE)
+	return append(buf, q.headerToBytes()...)
+}
 
-	binary.BigEndian.PutUint16(hdr[:2], q.Type)
-	binary.BigEndian.PutUint16(hdr[2:], q.Class)
-	return append(buf, hdr...)
+func (q *Query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
+	if compress {
+		if rbuf, ok := compressName2Buf(buf, len(buf), q.Name, cdct); ok {
+			return append(rbuf, q.headerToBytes()...)
+		}
+	}
+	return append(buf, q.ToBytes()...)
 }
 
 func QueryFromBytes(name string, buf []byte, ptr int) *Query {
