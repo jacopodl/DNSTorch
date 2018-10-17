@@ -42,11 +42,12 @@ func (q *Query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	return append(buf, q.ToBytes()...)
 }
 
-func QueryFromBytes(name string, buf []byte, ptr int) *Query {
-	query := Query{name, 0, 0}
+func QueryFromBytes(buf []byte, ptr *int) *Query {
+	query := Query{Qname2Name(buf, ptr), 0, 0}
 
-	query.Type = binary.BigEndian.Uint16(buf[ptr : ptr+2])
-	query.Class = binary.BigEndian.Uint16(buf[ptr+2:])
+	query.Type = binary.BigEndian.Uint16(buf[*ptr : *ptr+2])
+	query.Class = binary.BigEndian.Uint16(buf[*ptr+2:])
+	*ptr += QUERYHDRSIZE
 
 	return &query
 }

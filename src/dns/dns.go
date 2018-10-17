@@ -129,6 +129,35 @@ func (d *Dns) ToBytes(compress bool) []byte {
 	return buf
 }
 
+func FromBytes(buf []byte) *Dns {
+	dns := &Dns{}
+
+	// unpack header
+	dns.Identification = binary.BigEndian.Uint16(buf[:2])
+	dns.dnsFlags.unpackFlags(binary.BigEndian.Uint16(buf[2:4]))
+	qlen := int(binary.BigEndian.Uint16(buf[4:6]))
+	anslen := int(binary.BigEndian.Uint16(buf[6:8]))
+	authlen := int(binary.BigEndian.Uint16(buf[8:10]))
+	addlen := int(binary.BigEndian.Uint16(buf[10:12]))
+
+	ptr := HDRSIZE
+
+	for i := 0; i < qlen; i++ {
+		dns.AddQuestion(QueryFromBytes(buf, &ptr))
+	}
+	for i := 0; i < anslen; i++ {
+		dns.AddAnswer(RRFromBytes(buf, &ptr))
+	}
+	for i := 0; i < authlen; i++ {
+		dns.AddAuthority(RRFromBytes(buf, &ptr))
+	}
+	for i := 0; i < addlen; i++ {
+		dns.AddAdditional(RRFromBytes(buf, &ptr))
+	}
+
+	return dns
+}
+
 func compressor(name string, current int, dct map[string]uint16) (int, uint16) {
 	label := 0
 	length := len(name)

@@ -75,19 +75,25 @@ func Name2QnameN(name string, n int) []byte {
 	return buf
 }
 
-func Qname2Name(buf []byte, ptr int) string {
+func Qname2Name(buf []byte, ptr *int) string {
 	name := ""
+	current := *ptr
 
-	for sz := int(buf[ptr]); sz != 0x00; sz = int(buf[ptr]) {
+	for sz := int(buf[current]); sz != 0x00; sz = int(buf[current]) {
 		if sz == 0xC0 {
-			ptr = int(binary.BigEndian.Uint16(buf[ptr:ptr+2])) - NAMEPTR - HDRSIZE
+			current = int(binary.BigEndian.Uint16(buf[current:current+2])) - NAMEPTR
+			*ptr++
 			continue
 		}
-		name += string(buf[ptr+1 : ptr+sz+1])
-		if ptr += sz + 1; buf[ptr] != 0x00 {
+		name += string(buf[current+1 : current+sz+1])
+		if current += sz + 1; buf[current] != 0x00 {
 			name += SLABELSEP
 		}
+		if current > *ptr {
+			*ptr += sz + 1
+		}
 	}
+	*ptr++
 	return name
 }
 

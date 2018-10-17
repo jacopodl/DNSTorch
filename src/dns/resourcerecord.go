@@ -8,6 +8,7 @@ const RRHDRSIZE = 10
 
 type RdInterface interface {
 	packRData(current int, cdct map[string]uint16) []byte
+	fromBytes(buf []byte, current int, size int)
 	toBytes() []byte
 }
 
@@ -52,12 +53,64 @@ func (r *ResourceRecord) ToBytes() []byte {
 
 func (r *ResourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	if compress {
-		if rbuf, ok := compressName2Buf(buf, len(buf), r.Name, cdct); ok {
-			rdata := r.Rdata.packRData(len(buf), cdct)
+		if buf, ok := compressName2Buf(buf, len(buf), r.Name, cdct); ok {
+			rdata := r.Rdata.packRData(len(buf)+RRHDRSIZE, cdct)
 			r.Rdlength = uint16(len(rdata))
-			buf = append(rbuf, r.headerToBytes()...)
+			buf = append(buf, r.headerToBytes()...)
 			return append(buf, rdata...)
 		}
 	}
 	return append(buf, r.ToBytes()...)
+}
+
+func (r *ResourceRecord) unpack(buf []byte, ptr int) {
+	switch r.Qtype {
+	case TYPE_A:
+		r.Rdata = &A{}
+	case TYPE_NS:
+		r.Rdata = &NS{}
+	case TYPE_MD:
+		r.Rdata = &MD{}
+	case TYPE_MF:
+		r.Rdata = &MF{}
+	case TYPE_CNAME:
+		r.Rdata = &CNAME{}
+	case TYPE_SOA:
+		r.Rdata = &SOA{}
+	case TYPE_MB:
+		r.Rdata = &MB{}
+	case TYPE_MG:
+		r.Rdata = &MG{}
+	case TYPE_MR:
+		r.Rdata = &MR{}
+	case TYPE_NULL:
+		r.Rdata = &NULL{}
+	case TYPE_PTR:
+		r.Rdata = &PTR{}
+	case TYPE_MINFO:
+		r.Rdata = &MINFO{}
+	case TYPE_MX:
+		r.Rdata = &MX{}
+	case TYPE_AAAA:
+		r.Rdata = &AAAA{}
+	case TYPE_SRV:
+		r.Rdata = &SRV{}
+	}
+	r.Rdata.fromBytes(buf, ptr, int(r.Rdlength))
+}
+
+func RRFromBytes(buf []byte, ptr *int) *ResourceRecord {
+	rr := &ResourceRecord{Qname2Name(buf, ptr), 0, 0, 0, 0, nil}
+
+	rr.Qtype = binary.BigEndian.Uint16(buf[*ptr : *ptr+2])
+	rr.Class = binary.BigEndian.Uint16(buf[*ptr+2 : *ptr+4])
+	rr.Ttl = binary.BigEndian.Uint32(buf[*ptr+4 : *ptr+8])
+	rr.Rdlength = binary.BigEndian.Uint16(buf[*ptr+8 : *ptr+10])
+	*ptr += RRHDRSIZE
+
+	rr.unpack(buf, *ptr)
+
+	*ptr += int(rr.Rdlength)
+
+	return rr
 }
