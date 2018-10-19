@@ -54,7 +54,7 @@ func (r *ResourceRecord) ToBytes() []byte {
 
 func (r *ResourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	if compress {
-		if buf, ok := compressName2Buf(buf, len(buf), r.Name, cdct); ok {
+		if buf, ok := dnCompressor(buf, len(buf), r.Name, cdct); ok {
 			rdata := r.Rdata.packRData(len(buf)+RRHDRSIZE, cdct)
 			r.Rdlength = uint16(len(rdata))
 			buf = append(buf, r.headerToBytes()...)

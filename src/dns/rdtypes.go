@@ -97,13 +97,13 @@ type SOA struct {
 func (s *SOA) packRData(current int, cdct map[string]uint16) []byte {
 	var buf []byte = nil
 
-	if cnbuf, ok := compressName2Buf([]byte{}, current, s.Mname, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current, s.Mname, cdct); ok {
 		buf = append(buf, cnbuf...)
 	} else {
 		buf = append(buf, Name2Qname(s.Mname)...)
 	}
 
-	if cnbuf, ok := compressName2Buf([]byte{}, current+len(buf), s.Rname, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current+len(buf), s.Rname, cdct); ok {
 		buf = append(buf, cnbuf...)
 	} else {
 		buf = append(buf, Name2Qname(s.Rname)...)
@@ -265,13 +265,13 @@ type MINFO struct {
 func (m *MINFO) packRData(current int, cdct map[string]uint16) []byte {
 	var buf []byte = nil
 
-	if cnbuf, ok := compressName2Buf([]byte{}, current, m.Rmailbx, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current, m.Rmailbx, cdct); ok {
 		buf = append(buf, cnbuf...)
 	} else {
 		buf = append(buf, Name2Qname(m.Rmailbx)...)
 	}
 
-	if cnbuf, ok := compressName2Buf([]byte{}, current+len(buf), m.Emailbx, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current+len(buf), m.Emailbx, cdct); ok {
 		buf = append(buf, cnbuf...)
 	} else {
 		buf = append(buf, Name2Qname(m.Emailbx)...)
@@ -295,7 +295,7 @@ type MX struct {
 }
 
 func (m *MX) packRData(current int, cdct map[string]uint16) []byte {
-	if cnbuf, ok := compressName2Buf([]byte{}, current+2, m.Exchange, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current+2, m.Exchange, cdct); ok {
 		tmp := []byte{0x00, 0x00}
 		binary.BigEndian.PutUint16(tmp, m.Preference)
 		return append(tmp, cnbuf...)
@@ -356,7 +356,7 @@ type SRV struct {
 
 func (s *SRV) packRData(current int, cdct map[string]uint16) []byte {
 	buf := s.packUint16()
-	if cnbuf, ok := compressName2Buf([]byte{}, current+len(buf), s.Target, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current+len(buf), s.Target, cdct); ok {
 		buf = append(buf, cnbuf...)
 	} else {
 		buf = append(buf, Name2Qname(s.Target)...)
@@ -386,7 +386,7 @@ func (s *SRV) fromBytes(buf []byte, current int, size int) {
 }
 
 func __packRData(name string, current int, cdct map[string]uint16) []byte {
-	if cnbuf, ok := compressName2Buf([]byte{}, current, name, cdct); ok {
+	if cnbuf, ok := dnCompressor([]byte{}, current, name, cdct); ok {
 		return cnbuf
 	}
 	return __toBytes(name)

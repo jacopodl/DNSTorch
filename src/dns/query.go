@@ -35,7 +35,7 @@ func (q *Query) ToBytes() []byte {
 
 func (q *Query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	if compress {
-		if rbuf, ok := compressName2Buf(buf, len(buf), q.Name, cdct); ok {
+		if rbuf, ok := dnCompressor(buf, len(buf), q.Name, cdct); ok {
 			return append(rbuf, q.headerToBytes()...)
 		}
 	}

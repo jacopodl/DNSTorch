@@ -30,6 +30,16 @@ func CountLabel(name string) int {
 	return count
 }
 
+func dnCompressor(buf []byte, current int, name string, cdct map[string]uint16) ([]byte, bool) {
+	tmp := []byte{0x00, 0x00}
+	if count, ptr := searchDN(name, current, cdct); ptr > 0 {
+		buf = append(buf, Name2QnameN(name, count)...)
+		binary.BigEndian.PutUint16(tmp, ptr)
+		return append(buf, tmp...), true
+	}
+	return buf, false
+}
+
 func jmpQname(buf []byte, ptr int) int {
 	for length := buf[ptr]; length != 0; length = buf[ptr] {
 		if length == 0xC0 {
@@ -97,6 +107,20 @@ func Qname2Name(buf []byte, ptr *int) string {
 	}
 	*ptr++
 	return name
+}
+
+func searchDN(name string, current int, dct map[string]uint16) (int, uint16) {
+	label := 0
+	length := len(name)
+	for name != "" {
+		if ptr, ok := dct[name]; ok {
+			return label, ptr
+		}
+		dct[name] = uint16((current + (length - len(name))) | NAMEPTR) // +HDRSIZE is implicit
+		name = TruncLabelLeft(name, 1)
+		label++
+	}
+	return label, 0
 }
 
 func SplitLabel(name string) []string {
