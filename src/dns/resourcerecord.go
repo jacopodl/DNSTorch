@@ -86,12 +86,18 @@ func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 		r.Rdata = &MR{}
 	case TYPE_NULL:
 		r.Rdata = &NULL{}
+	case TYPE_WKS:
+		r.Rdata = &WKS{}
 	case TYPE_PTR:
 		r.Rdata = &PTR{}
+	case TYPE_HINFO:
+		r.Rdata = &HINFO{}
 	case TYPE_MINFO:
 		r.Rdata = &MINFO{}
 	case TYPE_MX:
 		r.Rdata = &MX{}
+	case TYPE_TXT:
+		r.Rdata = &TXT{}
 	case TYPE_AAAA:
 		r.Rdata = &AAAA{}
 	case TYPE_SRV:

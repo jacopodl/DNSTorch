@@ -200,6 +200,29 @@ func (n *NULL) fromBytes(buf []byte, current int, size int) {
 	n.Rdata = append(n.Rdata, buf[current:current+size]...)
 }
 
+type WKS struct {
+	Address  net.IP
+	Protocol byte
+	Bitmap   []byte
+}
+
+func (w *WKS) packRData(current int, cdct map[string]uint16) []byte {
+	return w.toBytes()
+}
+
+func (w *WKS) toBytes() []byte {
+	buf := make([]byte, 4+1)
+	copy(buf[:4], w.Address.To4())
+	buf[4] = w.Protocol
+	return append(buf, w.Bitmap...)
+}
+
+func (w *WKS) fromBytes(buf []byte, current int, size int) {
+	w.Address = net.IP(buf[current : current+4])
+	w.Protocol = buf[current+4]
+	w.Bitmap = buf[current+5 : (current+5)+(size-5)]
+}
+
 type PTR struct {
 	Ptr string
 }
@@ -214,6 +237,24 @@ func (p *PTR) toBytes() []byte {
 
 func (p *PTR) fromBytes(buf []byte, current int, size int) {
 	p.Ptr = Qname2Name(buf, &current)
+}
+
+type HINFO struct {
+	Cpu string
+	Os  string
+}
+
+func (h *HINFO) packRData(current int, cdct map[string]uint16) []byte {
+	return h.toBytes()
+}
+
+func (h *HINFO) toBytes() []byte {
+	return append(text2bytes(h.Cpu), text2bytes(h.Os)...)
+}
+
+func (h *HINFO) fromBytes(buf []byte, current int, size int) {
+	h.Cpu = bytes2text(buf, &current)
+	h.Os = bytes2text(buf, &current)
 }
 
 type MINFO struct {
@@ -272,6 +313,22 @@ func (m *MX) fromBytes(buf []byte, current int, size int) {
 	m.Preference = binary.BigEndian.Uint16(buf[current : current+2])
 	current += 2
 	m.Exchange = Qname2Name(buf, &current)
+}
+
+type TXT struct {
+	Txt string
+}
+
+func (t *TXT) packRData(current int, cdct map[string]uint16) []byte {
+	return t.toBytes()
+}
+
+func (t *TXT) toBytes() []byte {
+	return text2bytes(t.Txt)
+}
+
+func (t *TXT) fromBytes(buf []byte, current int, size int) {
+	t.Txt = bytes2text(buf, &current)
 }
 
 type AAAA struct {
@@ -337,4 +394,19 @@ func __packRData(name string, current int, cdct map[string]uint16) []byte {
 
 func __toBytes(name string) []byte {
 	return Name2Qname(name)
+}
+
+func text2bytes(str string) []byte {
+	buf := make([]byte, len(str)+1)
+	buf[0] = byte(len(str))
+	copy(buf[1:], []byte(str))
+	return buf
+}
+
+func bytes2text(buf []byte, current *int) string {
+	length := int(buf[*current])
+	*current++
+	str := string(buf[*current : *current+length])
+	*current += length
+	return str
 }
