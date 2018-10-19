@@ -81,8 +81,10 @@ func Qname2Name(buf []byte, ptr *int) string {
 
 	for sz := int(buf[current]); sz != 0x00; sz = int(buf[current]) {
 		if sz == 0xC0 {
+			if current == *ptr {
+				*ptr++
+			}
 			current = int(binary.BigEndian.Uint16(buf[current:current+2])) - NAMEPTR
-			*ptr++
 			continue
 		}
 		name += string(buf[current+1 : current+sz+1])

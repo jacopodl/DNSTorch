@@ -5,16 +5,16 @@ import (
 )
 
 const (
-	MASK_QR     = 0x0001
-	MASK_OPCODE = 0x001E
-	MASK_AA     = 0x0020
-	MASK_TC     = 0x0040
-	MASK_RD     = 0x0080
-	MASK_RA     = 0x0100
-	MASK_Z      = 0x0200
-	MASK_AD     = 0x0400
-	MASK_CD     = 0x0800
-	MASK_RCODE  = 0xF000
+	MASK_QR     = 1 << 15
+	MASK_OPCODE = 0x000F
+	MASK_AA     = 1 << 10
+	MASK_TC     = 1 << 9
+	MASK_RD     = 1 << 8
+	MASK_RA     = 1 << 7
+	MASK_Z      = 1 << 6
+	MASK_AD     = 1 << 5
+	MASK_CD     = 1 << 4
+	MASK_RCODE  = 0x000F
 )
 
 type dnsFlags struct {
@@ -34,38 +34,38 @@ func (df *dnsFlags) packFlags() uint16 {
 	flag := uint16(0)
 
 	if df.Response {
-		flag |= 1
+		flag |= MASK_QR
 	}
-	flag |= uint16(df.Opcode) << 1
+	flag |= uint16(df.Opcode&MASK_OPCODE) << 11
 	if df.Authoritative {
-		flag |= 1 << 5
+		flag |= MASK_AA
 	}
 	if df.Truncated {
-		flag |= 1 << 6
+		flag |= MASK_TC
 	}
 	if df.RecursionDesired {
-		flag |= 1 << 7
+		flag |= MASK_RD
 	}
 	if df.RecursionAvailable {
-		flag |= 1 << 8
+		flag |= MASK_RA
 	}
 	if df.Zero {
-		flag |= 1 << 9
+		flag |= MASK_Z
 	}
 	if df.AuthenticatedData {
-		flag |= 1 << 10
+		flag |= MASK_AD
 	}
 	if df.CheckingDisabled {
-		flag |= 1 << 11
+		flag |= MASK_CD
 	}
-	flag |= uint16(df.Rcode) << 12
+	flag |= uint16(df.Rcode & MASK_RCODE)
 
 	return flag
 }
 
 func (df *dnsFlags) unpackFlags(flag uint16) {
 	df.Response = flag&MASK_QR == MASK_QR
-	df.Opcode = int(flag&MASK_OPCODE) >> 1
+	df.Opcode = int(flag>>11) & MASK_OPCODE
 	df.Authoritative = flag&MASK_AA == MASK_AA
 	df.Truncated = flag&MASK_TC == MASK_TC
 	df.RecursionDesired = flag&MASK_RD == MASK_RD
@@ -73,7 +73,7 @@ func (df *dnsFlags) unpackFlags(flag uint16) {
 	df.Zero = flag&MASK_Z == MASK_Z
 	df.AuthenticatedData = flag&MASK_AD == MASK_AD
 	df.CheckingDisabled = flag&MASK_CD == MASK_CD
-	df.Rcode = int(flag&MASK_RCODE) >> 12
+	df.Rcode = int(flag & MASK_RCODE)
 }
 
 type Dns struct {

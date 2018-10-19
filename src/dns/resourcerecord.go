@@ -2,6 +2,7 @@ package dns
 
 import (
 	"encoding/binary"
+	"fmt"
 )
 
 const RRHDRSIZE = 10
@@ -95,6 +96,8 @@ func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 		r.Rdata = &AAAA{}
 	case TYPE_SRV:
 		r.Rdata = &SRV{}
+	default:
+		panic(fmt.Errorf("unknown type: %d", r.Qtype))
 	}
 	r.Rdata.fromBytes(buf, ptr, int(r.Rdlength))
 }
