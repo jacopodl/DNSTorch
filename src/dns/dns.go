@@ -79,26 +79,26 @@ func (df *dnsFlags) unpackFlags(flag uint16) {
 type Dns struct {
 	Identification uint16
 	dnsFlags
-	questions  []*Query
-	answers    []*ResourceRecord
-	authority  []*ResourceRecord
-	additional []*ResourceRecord
+	Questions  []*Query
+	Answers    []*ResourceRecord
+	Authority  []*ResourceRecord
+	Additional []*ResourceRecord
 }
 
 func (d *Dns) AddQuestion(query *Query) {
-	d.questions = append(d.questions, query)
+	d.Questions = append(d.Questions, query)
 }
 
 func (d *Dns) AddAnswer(rr *ResourceRecord) {
-	d.answers = append(d.answers, rr)
+	d.Answers = append(d.Answers, rr)
 }
 
 func (d *Dns) AddAuthority(rr *ResourceRecord) {
-	d.authority = append(d.authority, rr)
+	d.Authority = append(d.Authority, rr)
 }
 
 func (d *Dns) AddAdditional(rr *ResourceRecord) {
-	d.additional = append(d.additional, rr)
+	d.Additional = append(d.Additional, rr)
 }
 
 func (d *Dns) ToBytes(compress bool) []byte {
@@ -108,22 +108,22 @@ func (d *Dns) ToBytes(compress bool) []byte {
 	// pack header
 	binary.BigEndian.PutUint16(buf[:2], d.Identification)
 	binary.BigEndian.PutUint16(buf[2:4], d.packFlags())
-	binary.BigEndian.PutUint16(buf[4:6], uint16(len(d.questions)))
-	binary.BigEndian.PutUint16(buf[6:8], uint16(len(d.answers)))
-	binary.BigEndian.PutUint16(buf[8:10], uint16(len(d.authority)))
-	binary.BigEndian.PutUint16(buf[10:], uint16(len(d.additional)))
+	binary.BigEndian.PutUint16(buf[4:6], uint16(len(d.Questions)))
+	binary.BigEndian.PutUint16(buf[6:8], uint16(len(d.Answers)))
+	binary.BigEndian.PutUint16(buf[8:10], uint16(len(d.Authority)))
+	binary.BigEndian.PutUint16(buf[10:], uint16(len(d.Additional)))
 
-	for i := range d.questions {
-		buf = d.questions[i].pack(buf, compress, comprdct)
+	for i := range d.Questions {
+		buf = d.Questions[i].pack(buf, compress, comprdct)
 	}
-	for i := range d.answers {
-		buf = d.answers[i].pack(buf, compress, comprdct)
+	for i := range d.Answers {
+		buf = d.Answers[i].pack(buf, compress, comprdct)
 	}
-	for i := range d.authority {
-		buf = d.authority[i].pack(buf, compress, comprdct)
+	for i := range d.Authority {
+		buf = d.Authority[i].pack(buf, compress, comprdct)
 	}
-	for i := range d.additional {
-		buf = d.additional[i].pack(buf, compress, comprdct)
+	for i := range d.Additional {
+		buf = d.Additional[i].pack(buf, compress, comprdct)
 	}
 
 	return buf
