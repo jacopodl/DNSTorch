@@ -102,6 +102,12 @@ func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 		r.Rdata = &AAAA{}
 	case TYPE_SRV:
 		r.Rdata = &SRV{}
+	case TYPE_NAPTR:
+		r.Rdata = &NAPTR{}
+	case TYPE_DNAME:
+		r.Rdata = &DNAME{}
+	case TYPE_DHCID:
+		r.Rdata = &DHCID{}
 	default:
 		panic(fmt.Errorf("unknown type: %d", r.Qtype))
 	}

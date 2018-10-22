@@ -385,6 +385,80 @@ func (s *SRV) fromBytes(buf []byte, current int, size int) {
 	s.Target = Qname2Name(buf, &current)
 }
 
+type NAPTR struct {
+	Order       uint16
+	Preference  uint16
+	Flags       string
+	Service     string
+	Regexp      string
+	Replacement string
+}
+
+func (n *NAPTR) packUint16() []byte {
+	buf := []byte{0x00, 0x00, 0x00, 0x00}
+	binary.BigEndian.PutUint16(buf[:2], n.Order)
+	binary.BigEndian.PutUint16(buf[2:], n.Preference)
+	return buf
+}
+
+func (n *NAPTR) packRData(current int, cdct map[string]uint16) []byte {
+	buf := n.packUint16()
+	buf = append(buf, text2bytes(n.Flags)...)
+	buf = append(buf, text2bytes(n.Service)...)
+	buf = append(buf, text2bytes(n.Regexp)...)
+	return append(buf, __packRData(n.Replacement, current+len(buf), cdct)...)
+}
+
+func (n *NAPTR) toBytes() []byte {
+	buf := n.packUint16()
+	buf = append(buf, text2bytes(n.Flags)...)
+	buf = append(buf, text2bytes(n.Service)...)
+	buf = append(buf, text2bytes(n.Regexp)...)
+	return append(buf, Name2Qname(n.Replacement)...)
+}
+
+func (n *NAPTR) fromBytes(buf []byte, current int, size int) {
+	n.Order = binary.BigEndian.Uint16(buf[current : current+2])
+	n.Preference = binary.BigEndian.Uint16(buf[current+2 : current+4])
+	current += 4
+	n.Flags = bytes2text(buf, &current)
+	n.Service = bytes2text(buf, &current)
+	n.Regexp = bytes2text(buf, &current)
+	n.Replacement = Qname2Name(buf, &current)
+}
+
+type DNAME struct {
+	Dname string
+}
+
+func (d *DNAME) packRData(current int, cdct map[string]uint16) []byte {
+	return __packRData(d.Dname, current, cdct)
+}
+
+func (d *DNAME) toBytes() []byte {
+	return __toBytes(d.Dname)
+}
+
+func (d *DNAME) fromBytes(buf []byte, current int, size int) {
+	d.Dname = Qname2Name(buf, &current)
+}
+
+type DHCID struct {
+	Digest string
+}
+
+func (d *DHCID) packRData(current int, cdct map[string]uint16) []byte {
+	return d.toBytes()
+}
+
+func (d *DHCID) toBytes() []byte {
+	return text2bytes(d.Digest)
+}
+
+func (d *DHCID) fromBytes(buf []byte, current int, size int) {
+	d.Digest = bytes2text(buf, &current)
+}
+
 func __packRData(name string, current int, cdct map[string]uint16) []byte {
 	if cnbuf, ok := dnCompressor([]byte{}, current, name, cdct); ok {
 		return cnbuf
