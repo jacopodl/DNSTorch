@@ -79,25 +79,25 @@ func (df *dnsFlags) unpackFlags(flag uint16) {
 type Dns struct {
 	Identification uint16
 	dnsFlags
-	Questions  []*Query
-	Answers    []*ResourceRecord
-	Authority  []*ResourceRecord
-	Additional []*ResourceRecord
+	Questions  []*query
+	Answers    []*resourceRecord
+	Authority  []*resourceRecord
+	Additional []*resourceRecord
 }
 
-func (d *Dns) AddQuestion(query *Query) {
+func (d *Dns) AddQuestion(query *query) {
 	d.Questions = append(d.Questions, query)
 }
 
-func (d *Dns) AddAnswer(rr *ResourceRecord) {
+func (d *Dns) AddAnswer(rr *resourceRecord) {
 	d.Answers = append(d.Answers, rr)
 }
 
-func (d *Dns) AddAuthority(rr *ResourceRecord) {
+func (d *Dns) AddAuthority(rr *resourceRecord) {
 	d.Authority = append(d.Authority, rr)
 }
 
-func (d *Dns) AddAdditional(rr *ResourceRecord) {
+func (d *Dns) AddAdditional(rr *resourceRecord) {
 	d.Additional = append(d.Additional, rr)
 }
 
