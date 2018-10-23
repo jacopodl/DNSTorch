@@ -2,6 +2,8 @@ package dns
 
 import (
 	"encoding/binary"
+	"encoding/json"
+	"fmt"
 )
 
 const (
@@ -127,6 +129,34 @@ func (d *Dns) ToBytes(compress bool) []byte {
 	}
 
 	return buf
+}
+
+func (d *Dns) String() string {
+	str := fmt.Sprintf("ID: 0x%x", d.Identification)
+	// Flags
+	str += fmt.Sprintf("\nQR: %t, OpCode: %d, AA: %t, TC: %t, RD: %t, RA: %t, Z: %t, AD: %t, CD: %t, RCode: %d",
+		d.Response,
+		d.Opcode,
+		d.Authoritative,
+		d.Truncated,
+		d.RecursionDesired,
+		d.RecursionAvailable,
+		d.Zero,
+		d.AuthenticatedData,
+		d.CheckingDisabled,
+		d.Rcode)
+	// EOF
+	str += fmt.Sprintf("\nQuestions: %d", len(d.Questions))
+	str += fmt.Sprintf("\nAnswers: %d", len(d.Answers))
+	str += fmt.Sprintf("\nAuthority: %d", len(d.Authority))
+	str += fmt.Sprintf("\nAdditional: %d", len(d.Additional))
+	str += fmt.Sprintf("\nStatus: %s", Rcode2Msg(d.Rcode))
+	return str
+}
+
+func (d *Dns) Json() string {
+	js, _ := json.Marshal(d)
+	return string(js)
 }
 
 func FromBytes(buf []byte) *Dns {

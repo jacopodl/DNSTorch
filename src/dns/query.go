@@ -1,6 +1,10 @@
 package dns
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"encoding/json"
+	"fmt"
+)
 
 const QUERYHDRSIZE = 4
 
@@ -21,16 +25,25 @@ func (q *query) Qname() []byte {
 	return Name2Qname(q.Name)
 }
 
+func (q *query) ToBytes() []byte {
+	buf := Name2Qname(q.Name)
+	return append(buf, q.headerToBytes()...)
+}
+
+func (q *query) String() string {
+	return fmt.Sprintf("Name: %s\nType: %d\nClass: %d", q.Name, q.Type, q.Class)
+}
+
+func (q *query) Json() string {
+	js, _ := json.Marshal(q)
+	return string(js)
+}
+
 func (q *query) headerToBytes() []byte {
 	buf := make([]byte, QUERYHDRSIZE)
 	binary.BigEndian.PutUint16(buf[:2], q.Type)
 	binary.BigEndian.PutUint16(buf[2:], q.Class)
 	return buf
-}
-
-func (q *query) ToBytes() []byte {
-	buf := Name2Qname(q.Name)
-	return append(buf, q.headerToBytes()...)
 }
 
 func (q *query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {

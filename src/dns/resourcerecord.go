@@ -2,7 +2,9 @@ package dns
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"reflect"
 )
 
 const RRHDRSIZE = 10
@@ -33,6 +35,42 @@ func NewRR(name string, qtype, class uint16, ttl uint32, rdata RdInterface) (*re
 	return rr, nil
 }
 
+func (r *resourceRecord) ToBytes() []byte {
+	buf := Name2Qname(r.Name)
+	rdata := r.Rdata.toBytes()
+	r.Rdlength = uint16(len(rdata))
+	buf = append(buf, r.headerToBytes()...)
+	return append(buf, rdata...)
+}
+
+func (r *resourceRecord) String() string {
+	str := fmt.Sprintf("Name: %s"+
+		"\nType: %d"+
+		"\nClass: %d"+
+		"\nTTL: %d"+
+		"\nLength: %d"+
+		"\nRDATA:", r.Name, r.Qtype, r.Class, r.Ttl, r.Rdlength)
+	rds := r.RDStringsList()
+	for i := range rds {
+		str += "\n\t" + rds[i]
+	}
+	return str
+}
+
+func (r *resourceRecord) Json() string {
+	js, _ := json.Marshal(r)
+	return string(js)
+}
+
+func (r *resourceRecord) RDStringsList() []string {
+	var strs []string = nil
+	ref := reflect.ValueOf(r.Rdata).Elem()
+	for i := 0; i < ref.NumField(); i++ {
+		strs = append(strs, fmt.Sprintf("%s: %s", ref.Type().Field(i).Name, ref.Field(i).Interface()))
+	}
+	return strs
+}
+
 func (r *resourceRecord) headerToBytes() []byte {
 	buf := make([]byte, RRHDRSIZE)
 
@@ -42,14 +80,6 @@ func (r *resourceRecord) headerToBytes() []byte {
 	binary.BigEndian.PutUint16(buf[8:], r.Rdlength)
 
 	return buf
-}
-
-func (r *resourceRecord) ToBytes() []byte {
-	buf := Name2Qname(r.Name)
-	rdata := r.Rdata.toBytes()
-	r.Rdlength = uint16(len(rdata))
-	buf = append(buf, r.headerToBytes()...)
-	return append(buf, rdata...)
 }
 
 func (r *resourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
