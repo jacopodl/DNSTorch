@@ -30,7 +30,7 @@ func (n *NS) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (n *NS) toBytes() []byte {
-	return __toBytes(n.NSdname)
+	return Name2Qname(n.NSdname)
 }
 
 func (n *NS) fromBytes(buf []byte, current int, size int) {
@@ -46,7 +46,7 @@ func (m *MD) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (m *MD) toBytes() []byte {
-	return __toBytes(m.MDname)
+	return Name2Qname(m.MDname)
 }
 
 func (m *MD) fromBytes(buf []byte, current int, size int) {
@@ -62,7 +62,7 @@ func (m *MF) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (m *MF) toBytes() []byte {
-	return __toBytes(m.MFname)
+	return Name2Qname(m.MFname)
 }
 
 func (m *MF) fromBytes(buf []byte, current int, size int) {
@@ -78,7 +78,7 @@ func (c *CNAME) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (c *CNAME) toBytes() []byte {
-	return __toBytes(c.Cname)
+	return Name2Qname(c.Cname)
 }
 
 func (c *CNAME) fromBytes(buf []byte, current int, size int) {
@@ -96,19 +96,8 @@ type SOA struct {
 
 func (s *SOA) packRData(current int, cdct map[string]uint16) []byte {
 	var buf []byte = nil
-
-	if cnbuf, ok := dnCompressor([]byte{}, current, s.Mname, cdct); ok {
-		buf = append(buf, cnbuf...)
-	} else {
-		buf = append(buf, Name2Qname(s.Mname)...)
-	}
-
-	if cnbuf, ok := dnCompressor([]byte{}, current+len(buf), s.Rname, cdct); ok {
-		buf = append(buf, cnbuf...)
-	} else {
-		buf = append(buf, Name2Qname(s.Rname)...)
-	}
-
+	buf = append(buf, __packRData(s.Mname, current, cdct)...)
+	buf = append(buf, __packRData(s.Rname, current+len(buf), cdct)...)
 	return append(buf, s.packUint32()...)
 }
 
@@ -145,7 +134,7 @@ func (m *MB) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (m *MB) toBytes() []byte {
-	return __toBytes(m.MBname)
+	return Name2Qname(m.MBname)
 }
 
 func (m *MB) fromBytes(buf []byte, current int, size int) {
@@ -161,7 +150,7 @@ func (m *MG) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (m *MG) toBytes() []byte {
-	return __toBytes(m.MGname)
+	return Name2Qname(m.MGname)
 }
 
 func (m *MG) fromBytes(buf []byte, current int, size int) {
@@ -177,7 +166,7 @@ func (m *MR) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (m *MR) toBytes() []byte {
-	return __toBytes(m.Newname)
+	return Name2Qname(m.Newname)
 }
 
 func (m *MR) fromBytes(buf []byte, current int, size int) {
@@ -232,7 +221,7 @@ func (p *PTR) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (p *PTR) toBytes() []byte {
-	return __toBytes(p.Ptr)
+	return Name2Qname(p.Ptr)
 }
 
 func (p *PTR) fromBytes(buf []byte, current int, size int) {
@@ -263,21 +252,8 @@ type MINFO struct {
 }
 
 func (m *MINFO) packRData(current int, cdct map[string]uint16) []byte {
-	var buf []byte = nil
-
-	if cnbuf, ok := dnCompressor([]byte{}, current, m.Rmailbx, cdct); ok {
-		buf = append(buf, cnbuf...)
-	} else {
-		buf = append(buf, Name2Qname(m.Rmailbx)...)
-	}
-
-	if cnbuf, ok := dnCompressor([]byte{}, current+len(buf), m.Emailbx, cdct); ok {
-		buf = append(buf, cnbuf...)
-	} else {
-		buf = append(buf, Name2Qname(m.Emailbx)...)
-	}
-
-	return buf
+	buf := __packRData(m.Rmailbx, current, cdct)
+	return append(buf, __packRData(m.Emailbx, current+len(buf), cdct)...)
 }
 
 func (m *MINFO) toBytes() []byte {
@@ -356,12 +332,7 @@ type SRV struct {
 
 func (s *SRV) packRData(current int, cdct map[string]uint16) []byte {
 	buf := s.packUint16()
-	if cnbuf, ok := dnCompressor([]byte{}, current+len(buf), s.Target, cdct); ok {
-		buf = append(buf, cnbuf...)
-	} else {
-		buf = append(buf, Name2Qname(s.Target)...)
-	}
-	return buf
+	return append(buf, __packRData(s.Target, current+len(buf), cdct)...)
 }
 
 func (s *SRV) toBytes() []byte {
@@ -436,7 +407,7 @@ func (d *DNAME) packRData(current int, cdct map[string]uint16) []byte {
 }
 
 func (d *DNAME) toBytes() []byte {
-	return __toBytes(d.Dname)
+	return Name2Qname(d.Dname)
 }
 
 func (d *DNAME) fromBytes(buf []byte, current int, size int) {
@@ -463,10 +434,6 @@ func __packRData(name string, current int, cdct map[string]uint16) []byte {
 	if cnbuf, ok := dnCompressor([]byte{}, current, name, cdct); ok {
 		return cnbuf
 	}
-	return __toBytes(name)
-}
-
-func __toBytes(name string) []byte {
 	return Name2Qname(name)
 }
 
