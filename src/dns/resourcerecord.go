@@ -66,7 +66,12 @@ func (r *resourceRecord) RDStringsList() []string {
 	var strs []string = nil
 	ref := reflect.ValueOf(r.Rdata).Elem()
 	for i := 0; i < ref.NumField(); i++ {
-		strs = append(strs, fmt.Sprintf("%s: %s", ref.Type().Field(i).Name, ref.Field(i).Interface()))
+		switch ref.Field(i).Kind() {
+		case reflect.Uint8, reflect.Uint16, reflect.Uint32:
+			strs = append(strs, fmt.Sprintf("%s: %d", ref.Type().Field(i).Name, ref.Field(i).Uint()))
+		default:
+			strs = append(strs, fmt.Sprintf("%s: %s", ref.Type().Field(i).Name, ref.Field(i)))
+		}
 	}
 	return strs
 }
@@ -84,12 +89,14 @@ func (r *resourceRecord) headerToBytes() []byte {
 
 func (r *resourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	if compress {
-		if buf, ok := dnCompressor(buf, len(buf), r.Name, cdct); ok {
-			rdata := r.Rdata.packRData(len(buf)+RRHDRSIZE, cdct)
-			r.Rdlength = uint16(len(rdata))
-			buf = append(buf, r.headerToBytes()...)
-			return append(buf, rdata...)
+		ok := false
+		if buf, ok = dnCompressor(buf, len(buf), r.Name, cdct); !ok {
+			buf = append(buf, Name2Qname(r.Name)...)
 		}
+		rdata := r.Rdata.packRData(len(buf)+RRHDRSIZE, cdct)
+		r.Rdlength = uint16(len(rdata))
+		buf = append(buf, r.headerToBytes()...)
+		return append(buf, rdata...)
 	}
 	return append(buf, r.ToBytes()...)
 }
