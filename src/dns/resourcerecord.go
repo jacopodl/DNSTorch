@@ -45,14 +45,14 @@ func (r *resourceRecord) ToBytes() []byte {
 
 func (r *resourceRecord) String() string {
 	str := fmt.Sprintf("Name: %s"+
-		"\nType: %d"+
-		"\nClass: %d"+
-		"\nTTL: %d"+
-		"\nLength: %d"+
-		"\nRDATA:", r.Name, r.Qtype, r.Class, r.Ttl, r.Rdlength)
+		" Type: %d(%s)"+
+		" Class: %d"+
+		" TTL: %d"+
+		" Length: %d"+
+		" RDATA:\n\t", r.Name, r.Qtype, Type2TName(r.Qtype), r.Class, r.Ttl, r.Rdlength)
 	rds := r.RDStringsList()
 	for i := range rds {
-		str += "\n\t" + rds[i]
+		str += " " + rds[i]
 	}
 	return str
 }

@@ -31,7 +31,7 @@ func (q *query) ToBytes() []byte {
 }
 
 func (q *query) String() string {
-	return fmt.Sprintf("Name: %s\nType: %d\nClass: %d", q.Name, q.Type, q.Class)
+	return fmt.Sprintf("Name: %s Type: %d(%s) Class: %d", q.Name, q.Type, Type2TName(q.Type), q.Class)
 }
 
 func (q *query) Json() string {

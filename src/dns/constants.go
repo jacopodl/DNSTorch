@@ -1,8 +1,13 @@
 package dns
 
+import (
+	"strings"
+)
+
 const (
 	MAXLEN     = 512
 	HDRSIZE    = 12
+	PORT       = 53
 	MAXDATALEN = MAXLEN - HDRSIZE
 	NAMEPTR    = 0xC000
 
@@ -154,6 +159,81 @@ var (
 		RCODE_BADNAME:        "duplicate key name",
 		RCODE_BADALG:         "algorithm not supported",
 		RCODE_BADTRUNC:       "bad truncation"}
+	nameType = map[string]int{
+		"A":          TYPE_A,
+		"NS":         TYPE_NS,
+		"MD":         TYPE_MD,
+		"MF":         TYPE_MF,
+		"CNAME":      TYPE_CNAME,
+		"SOA":        TYPE_SOA,
+		"MB":         TYPE_MB,
+		"MG":         TYPE_MG,
+		"MR":         TYPE_MR,
+		"NULL":       TYPE_NULL,
+		"WKS":        TYPE_WKS,
+		"PTR":        TYPE_PTR,
+		"HINFO":      TYPE_HINFO,
+		"MINFO":      TYPE_MINFO,
+		"MX":         TYPE_MX,
+		"TXT":        TYPE_TXT,
+		"RP":         TYPE_RP,
+		"AFSDB":      TYPE_AFSDB,
+		"X25":        TYPE_X25,
+		"ISDN":       TYPE_ISDN,
+		"RT":         TYPE_RT,
+		"NSAP":       TYPE_NSAP,
+		"NSAP_PTR":   TYPE_NSAP_PTR,
+		"SIG":        TYPE_SIG,
+		"KEY":        TYPE_KEY,
+		"PX":         TYPE_PX,
+		"GPOS":       TYPE_GPOS,
+		"AAAA":       TYPE_AAAA,
+		"LOC":        TYPE_LOC,
+		"NXT":        TYPE_NXT,
+		"EID":        TYPE_EID,
+		"NIMLOC":     TYPE_NIMLOC,
+		"SRV":        TYPE_SRV,
+		"ATMA":       TYPE_ATMA,
+		"NAPTR":      TYPE_NAPTR,
+		"KX":         TYPE_KX,
+		"CERT":       TYPE_CERT,
+		"A6":         TYPE_A6,
+		"DNAME":      TYPE_DNAME,
+		"SINK":       TYPE_SINK,
+		"OPT":        TYPE_OPT,
+		"APL":        TYPE_APL,
+		"DS":         TYPE_DS,
+		"SSHFP":      TYPE_SSHFP,
+		"IPSECKEY":   TYPE_IPSECKEY,
+		"RRSIG":      TYPE_RRSIG,
+		"NSEC":       TYPE_NSEC,
+		"DNSKEY":     TYPE_DNSKEY,
+		"DHCID":      TYPE_DHCID,
+		"NSEC3":      TYPE_NSEC3,
+		"NSEC3PARAM": TYPE_NSEC3PARAM,
+		"TLSA":       TYPE_TLSA,
+		"HIP":        TYPE_HIP,
+		"NINFO":      TYPE_NINFO,
+		"RKEY":       TYPE_RKEY,
+		"TALINK":     TYPE_TALINK,
+		"CDS":        TYPE_CDS,
+		"SPF":        TYPE_SPF,
+		"UINFO":      TYPE_UINFO,
+		"UID":        TYPE_UID,
+		"GID":        TYPE_GID,
+		"UNSPEC":     TYPE_UNSPEC,
+		"TKEY":       TYPE_TKEY,
+		"TISG":       TYPE_TISG,
+		"IXFR":       TYPE_IXFR,
+		"AXFR":       TYPE_AXFR,
+		"MAILB":      TYPE_MAILB,
+		"MAILA":      TYPE_MAILA,
+		"ANY":        TYPE_ANY,
+		"URI":        TYPE_URI,
+		"CAA":        TYPE_CAA,
+		"TA":         TYPE_TA,
+		"DLV":        TYPE_DLV}
+	typeName map[uint16]string = nil
 )
 
 func Rcode2Msg(rcode int) string {
@@ -161,4 +241,24 @@ func Rcode2Msg(rcode int) string {
 		return msg
 	}
 	return "unknown RCODE value"
+}
+
+func TName2Type(name string) (uint16, bool) {
+	if val, ok := nameType[strings.ToUpper(name)]; ok {
+		return uint16(val), true
+	}
+	return 0, false
+}
+
+func Type2TName(tp uint16) string {
+	if typeName == nil {
+		typeName = make(map[uint16]string, len(nameType))
+		for i := range nameType {
+			typeName[uint16(nameType[i])] = i
+		}
+	}
+	if val, ok := typeName[tp]; ok {
+		return val
+	}
+	return ""
 }
