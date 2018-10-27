@@ -57,7 +57,7 @@ func Name2Qname(name string) []byte {
 	var ins = 0
 	var count byte = 0
 
-	if name == "" {
+	if name == "" || name == "." {
 		return []byte{0x00}
 	}
 

@@ -8,45 +8,45 @@ import (
 
 const QUERYHDRSIZE = 4
 
-type query struct {
+type Query struct {
 	Name  string
 	Type  uint16
 	Class uint16
 }
 
-func NewQuery(name string, qtype, class uint16) (*query, error) {
+func NewQuery(name string, qtype, class uint16) (*Query, error) {
 	if err := VerifyDN(name); err != nil {
 		return nil, err
 	}
-	return &query{name, qtype, class}, nil
+	return &Query{name, qtype, class}, nil
 }
 
-func (q *query) Qname() []byte {
+func (q *Query) Qname() []byte {
 	return Name2Qname(q.Name)
 }
 
-func (q *query) ToBytes() []byte {
+func (q *Query) ToBytes() []byte {
 	buf := Name2Qname(q.Name)
 	return append(buf, q.headerToBytes()...)
 }
 
-func (q *query) String() string {
+func (q *Query) String() string {
 	return fmt.Sprintf("Name: %s Type: %d(%s) Class: %d", q.Name, q.Type, Type2TName(q.Type), q.Class)
 }
 
-func (q *query) Json() string {
+func (q *Query) Json() string {
 	js, _ := json.Marshal(q)
 	return string(js)
 }
 
-func (q *query) headerToBytes() []byte {
+func (q *Query) headerToBytes() []byte {
 	buf := make([]byte, QUERYHDRSIZE)
 	binary.BigEndian.PutUint16(buf[:2], q.Type)
 	binary.BigEndian.PutUint16(buf[2:], q.Class)
 	return buf
 }
 
-func (q *query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
+func (q *Query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	if compress {
 		if rbuf, ok := dnCompressor(buf, len(buf), q.Name, cdct); ok {
 			return append(rbuf, q.headerToBytes()...)
@@ -55,8 +55,8 @@ func (q *query) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	return append(buf, q.ToBytes()...)
 }
 
-func QueryFromBytes(buf []byte, ptr *int) *query {
-	query := query{Qname2Name(buf, ptr), 0, 0}
+func QueryFromBytes(buf []byte, ptr *int) *Query {
+	query := Query{Qname2Name(buf, ptr), 0, 0}
 
 	query.Type = binary.BigEndian.Uint16(buf[*ptr : *ptr+2])
 	query.Class = binary.BigEndian.Uint16(buf[*ptr+2:])

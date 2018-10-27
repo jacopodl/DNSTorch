@@ -15,7 +15,7 @@ type RdInterface interface {
 	toBytes() []byte
 }
 
-type resourceRecord struct {
+type ResourceRecord struct {
 	Name     string
 	Qtype    uint16
 	Class    uint16
@@ -24,18 +24,18 @@ type resourceRecord struct {
 	Rdata    RdInterface
 }
 
-func NewRR(name string, qtype, class uint16, ttl uint32, rdata RdInterface) (*resourceRecord, error) {
+func NewRR(name string, qtype, class uint16, ttl uint32, rdata RdInterface) (*ResourceRecord, error) {
 	if err := VerifyDN(name); err != nil {
 		return nil, err
 	}
-	rr := &resourceRecord{name, qtype, class, ttl, 0, rdata}
+	rr := &ResourceRecord{name, qtype, class, ttl, 0, rdata}
 	if rdata == nil {
 		rr.Rdata = &NULL{}
 	}
 	return rr, nil
 }
 
-func (r *resourceRecord) ToBytes() []byte {
+func (r *ResourceRecord) ToBytes() []byte {
 	buf := Name2Qname(r.Name)
 	rdata := r.Rdata.toBytes()
 	r.Rdlength = uint16(len(rdata))
@@ -43,7 +43,7 @@ func (r *resourceRecord) ToBytes() []byte {
 	return append(buf, rdata...)
 }
 
-func (r *resourceRecord) String() string {
+func (r *ResourceRecord) String() string {
 	str := fmt.Sprintf("Name: %s"+
 		" Type: %d(%s)"+
 		" Class: %d"+
@@ -57,12 +57,12 @@ func (r *resourceRecord) String() string {
 	return str
 }
 
-func (r *resourceRecord) Json() string {
+func (r *ResourceRecord) Json() string {
 	js, _ := json.Marshal(r)
 	return string(js)
 }
 
-func (r *resourceRecord) RDStringsList() []string {
+func (r *ResourceRecord) RDStringsList() []string {
 	var strs []string = nil
 	ref := reflect.ValueOf(r.Rdata).Elem()
 	for i := 0; i < ref.NumField(); i++ {
@@ -76,7 +76,7 @@ func (r *resourceRecord) RDStringsList() []string {
 	return strs
 }
 
-func (r *resourceRecord) headerToBytes() []byte {
+func (r *ResourceRecord) headerToBytes() []byte {
 	buf := make([]byte, RRHDRSIZE)
 
 	binary.BigEndian.PutUint16(buf[:2], r.Qtype)
@@ -87,7 +87,7 @@ func (r *resourceRecord) headerToBytes() []byte {
 	return buf
 }
 
-func (r *resourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
+func (r *ResourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16) []byte {
 	if compress {
 		ok := false
 		if buf, ok = dnCompressor(buf, len(buf), r.Name, cdct); !ok {
@@ -101,7 +101,7 @@ func (r *resourceRecord) pack(buf []byte, compress bool, cdct map[string]uint16)
 	return append(buf, r.ToBytes()...)
 }
 
-func (r *resourceRecord) unpack(buf []byte, ptr int) {
+func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 	switch r.Qtype {
 	case TYPE_A:
 		r.Rdata = &A{}
@@ -151,8 +151,8 @@ func (r *resourceRecord) unpack(buf []byte, ptr int) {
 	r.Rdata.fromBytes(buf, ptr, int(r.Rdlength))
 }
 
-func RRFromBytes(buf []byte, ptr *int) *resourceRecord {
-	rr := &resourceRecord{Qname2Name(buf, ptr), 0, 0, 0, 0, nil}
+func RRFromBytes(buf []byte, ptr *int) *ResourceRecord {
+	rr := &ResourceRecord{Qname2Name(buf, ptr), 0, 0, 0, 0, nil}
 
 	rr.Qtype = binary.BigEndian.Uint16(buf[*ptr : *ptr+2])
 	rr.Class = binary.BigEndian.Uint16(buf[*ptr+2 : *ptr+4])
