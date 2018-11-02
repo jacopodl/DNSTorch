@@ -135,8 +135,14 @@ func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 		r.Rdata = &MX{}
 	case TYPE_TXT:
 		r.Rdata = &TXT{}
+	case TYPE_RP:
+		r.Rdata = &RP{}
+	case TYPE_AFSDB:
+		r.Rdata = &AFSDB{}
 	case TYPE_AAAA:
 		r.Rdata = &AAAA{}
+	case TYPE_LOC:
+		r.Rdata = &LOC{}
 	case TYPE_SRV:
 		r.Rdata = &SRV{}
 	case TYPE_NAPTR:

@@ -307,6 +307,51 @@ func (t *TXT) fromBytes(buf []byte, current int, size int) {
 	t.Txt = bytes2text(buf, &current)
 }
 
+type RP struct {
+	Mbox string
+	Txt  string
+}
+
+func (r *RP) packRData(current int, cdct map[string]uint16) []byte {
+	buf := __packRData(r.Mbox, current, cdct)
+	return append(buf, __packRData(r.Txt, current+len(buf), cdct)...)
+}
+
+func (r *RP) toBytes() []byte {
+	return append(Name2Qname(r.Mbox), Name2Qname(r.Txt)...)
+}
+
+func (r *RP) fromBytes(buf []byte, current int, size int) {
+	r.Mbox = Qname2Name(buf, &current)
+	r.Txt = Qname2Name(buf, &current)
+}
+
+type AFSDB struct {
+	Subtype  uint16
+	Hostname string
+}
+
+func (a *AFSDB) packRData(current int, cdct map[string]uint16) []byte {
+	if cnbuf, ok := dnCompressor([]byte{}, current+2, a.Hostname, cdct); ok {
+		tmp := []byte{0x00, 0x00}
+		binary.BigEndian.PutUint16(tmp, a.Subtype)
+		return append(tmp, cnbuf...)
+	}
+	return a.toBytes()
+}
+
+func (a *AFSDB) toBytes() []byte {
+	tmp := []byte{0x00, 0x00}
+	binary.BigEndian.PutUint16(tmp, a.Subtype)
+	return append(tmp, Name2Qname(a.Hostname)...)
+}
+
+func (a *AFSDB) fromBytes(buf []byte, current int, size int) {
+	a.Subtype = binary.BigEndian.Uint16(buf[current : current+2])
+	current += 2
+	a.Hostname = Qname2Name(buf, &current)
+}
+
 type AAAA struct {
 	Address net.IP
 }
@@ -321,6 +366,44 @@ func (a *AAAA) toBytes() []byte {
 
 func (a *AAAA) fromBytes(buf []byte, current int, size int) {
 	a.Address = net.IP(buf[current : current+16])
+}
+
+type LOC struct {
+	Version   uint8
+	Size      uint8
+	HorizPre  uint8
+	VertPre   uint8
+	Latitude  uint32
+	Longitude uint32
+	Altitude  uint32
+}
+
+func (l *LOC) packRData(current int, cdct map[string]uint16) []byte {
+	return l.toBytes()
+}
+
+func (l *LOC) toBytes() []byte {
+	buf := make([]byte, 16)
+
+	buf[0] = l.Version
+	buf[1] = l.Size
+	buf[2] = l.HorizPre
+	buf[3] = l.VertPre
+	binary.BigEndian.PutUint32(buf[4:8], l.Latitude)
+	binary.BigEndian.PutUint32(buf[8:12], l.Longitude)
+	binary.BigEndian.PutUint32(buf[12:], l.Altitude)
+
+	return buf
+}
+
+func (l *LOC) fromBytes(buf []byte, current int, size int) {
+	l.Version = buf[0]
+	l.Size = buf[1]
+	l.HorizPre = buf[2]
+	l.VertPre = buf[3]
+	l.Latitude = binary.BigEndian.Uint32(buf[4:8])
+	l.Longitude = binary.BigEndian.Uint32(buf[8:12])
+	l.Altitude = binary.BigEndian.Uint32(buf[12:])
 }
 
 type SRV struct {
