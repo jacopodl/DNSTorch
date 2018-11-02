@@ -42,7 +42,7 @@ func dnCompressor(buf []byte, current int, name string, cdct map[string]uint16) 
 
 func jmpQname(buf []byte, ptr int) int {
 	for length := buf[ptr]; length != 0; length = buf[ptr] {
-		if length == 0xC0 {
+		if length&NAMEPTR == NAMEPTR {
 			ptr++
 			break
 		}
@@ -52,7 +52,7 @@ func jmpQname(buf []byte, ptr int) int {
 }
 
 func Name2Qname(name string) []byte {
-	var qname []byte = make([]byte, len(name)+2)
+	var qname = make([]byte, len(name)+2)
 	var i = 0
 	var ins = 0
 	var count byte = 0
@@ -90,11 +90,11 @@ func Qname2Name(buf []byte, ptr *int) string {
 	current := *ptr
 
 	for sz := int(buf[current]); sz != 0x00; sz = int(buf[current]) {
-		if sz == 0xC0 {
+		if sz&NAMEPTR == NAMEPTR {
 			if current == *ptr {
 				*ptr++
 			}
-			current = int(binary.BigEndian.Uint16(buf[current:current+2])) - NAMEPTR
+			current = int(binary.BigEndian.Uint16(buf[current:current+2])) - 0xC000
 			continue
 		}
 		name += string(buf[current+1 : current+sz+1])

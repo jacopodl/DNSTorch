@@ -9,7 +9,7 @@ const (
 	HDRSIZE    = 12
 	PORT       = 53
 	MAXDATALEN = MAXLEN - HDRSIZE
-	NAMEPTR    = 0xC000
+	NAMEPTR    = 0xC0
 
 	// QR - 1bit
 	QR_QUERY    = 0
