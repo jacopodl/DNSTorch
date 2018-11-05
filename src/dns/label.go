@@ -17,7 +17,7 @@ func CountLabel(name string) int {
 	count := 0
 	addlbl := true
 
-	for i, _ := range name {
+	for i := range name {
 		if addlbl {
 			count++
 			addlbl = false
@@ -51,6 +51,24 @@ func jmpQname(buf []byte, ptr int) int {
 	return ptr + 1
 }
 
+func GetNLabel(name string, n int) string {
+	count := 0
+	i := 0
+
+	if n <= 0 {
+		return ""
+	}
+	for i = range name {
+		if name[i] == LABELSEP {
+			count++
+			if count >= n {
+				return name[:i]
+			}
+		}
+	}
+	return name
+}
+
 func Name2Qname(name string) []byte {
 	var qname = make([]byte, len(name)+2)
 	var i = 0
@@ -78,7 +96,7 @@ func Name2Qname(name string) []byte {
 
 func Name2QnameN(name string, n int) []byte {
 	lc := CountLabel(name)
-	buf := Name2Qname(TruncLabelRight(name, n))
+	buf := Name2Qname(GetNLabel(name, n))
 	if n < lc {
 		return buf[:len(buf)-1]
 	}
@@ -127,7 +145,7 @@ func SplitLabel(name string) []string {
 	var labels []string = nil
 	splt := strings.Split(name, SLABELSEP)
 
-	for i, _ := range splt {
+	for i := range splt {
 		if splt[i] != "" {
 			labels = append(labels, strings.TrimSpace(splt[i]))
 		}
@@ -136,38 +154,42 @@ func SplitLabel(name string) []string {
 	return labels
 }
 
-func truncLabel(name string, n int, left bool) string {
+func TruncLabelLeft(name string, n int) string {
 	count := 0
 	i := 0
 
 	if n <= 0 {
-		return ""
+		return name
 	}
-	for i, _ = range name {
+
+	for i = range name {
 		if name[i] == LABELSEP {
 			count++
 			if count >= n {
-				i--
 				break
 			}
 		}
 	}
-	i++
-	if left {
-		if len(name) != i {
-			i++
-		}
-		return name[i:]
-	}
-	return name[:i]
-}
 
-func TruncLabelLeft(name string, n int) string {
-	return truncLabel(name, n, true)
+	return name[i+1:]
 }
 
 func TruncLabelRight(name string, n int) string {
-	return truncLabel(name, n, false)
+	count := 0
+
+	if n <= 0 {
+		return name
+	}
+
+	for i := len(name) - 1; i >= 0; i-- {
+		if name[i] == LABELSEP {
+			count++
+			if count >= n {
+				return name[:i]
+			}
+		}
+	}
+	return ""
 }
 
 func VerifyDN(name string) error {
@@ -180,7 +202,7 @@ func VerifyDN(name string) error {
 		return fmt.Errorf("domain name exceeds the maximum size of %d bytes", MAXDN)
 	}
 
-	for i, _ := range name {
+	for i := range name {
 		if name[i] != LABELSEP {
 			chrcount++
 			if chrcount > MAXLBLSIZE {
