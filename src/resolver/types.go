@@ -17,6 +17,7 @@ type DtQuery struct {
 }
 
 type DtLookup struct {
-	Query *DtQuery
-	Msg   *dns.Dns
+	Query   *DtQuery
+	Msg     *dns.Dns
+	NsChain []*dns.ResourceRecord
 }
