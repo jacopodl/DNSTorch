@@ -50,7 +50,7 @@ func (r *ResourceRecord) String() string {
 		" TTL: %d"+
 		" Length: %d"+
 		" RDATA:\n\t", r.Name, r.Qtype, Type2TName(r.Qtype), r.Class, r.Ttl, r.Rdlength)
-	rds := r.RDStringsList()
+	rds := r.RDStringsList(true)
 	for i := range rds {
 		str += " " + rds[i]
 	}
@@ -62,16 +62,21 @@ func (r *ResourceRecord) Json() string {
 	return string(js)
 }
 
-func (r *ResourceRecord) RDStringsList() []string {
+func (r *ResourceRecord) RDStringsList(fieldName bool) []string {
 	var strs []string = nil
 	ref := reflect.ValueOf(r.Rdata).Elem()
 	for i := 0; i < ref.NumField(); i++ {
+		str := ""
+		if fieldName {
+			str = ref.Type().Field(i).Name + ": "
+		}
 		switch ref.Field(i).Kind() {
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32:
-			strs = append(strs, fmt.Sprintf("%s: %d", ref.Type().Field(i).Name, ref.Field(i).Uint()))
+			str += fmt.Sprintf("%d", ref.Field(i).Uint())
 		default:
-			strs = append(strs, fmt.Sprintf("%s: %s", ref.Type().Field(i).Name, ref.Field(i)))
+			str += fmt.Sprintf("%s", ref.Field(i))
 		}
+		strs = append(strs, str)
 	}
 	return strs
 }

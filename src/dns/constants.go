@@ -262,3 +262,24 @@ func Type2TName(tp uint16) string {
 	}
 	return ""
 }
+
+func CName2Class(name string) (uint16, bool) {
+	var class uint16 = 0
+
+	switch strings.ToUpper(name) {
+	case "IN":
+		class = CLASS_IN
+	case "CH":
+		class = CLASS_CH
+	case "HS":
+		class = CLASS_HS
+	case "NONE":
+		class = CLASS_NONE
+	case "ANY":
+		class = CLASS_ANY
+	default:
+		return 0, false
+	}
+
+	return class, true
+}
