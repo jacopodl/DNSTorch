@@ -7,32 +7,32 @@ import (
 	"time"
 )
 
-type resolver struct {
+type Resolver struct {
 	server   net.IP
 	port     int
 	tcp      bool
-	ignore   bool
-	flags    DtQFlags
-	timeout  time.Duration
+	Ignore   bool
+	Flags    DtQFlags
+	Timeout  time.Duration
 	maxDeleg int
 }
 
-func NewResolver(server net.IP, port int, tcp bool) *resolver {
-	return &resolver{server: server, port: port, tcp: tcp, timeout: 3000, maxDeleg: 24}
+func NewResolver(server net.IP, port int, tcp bool) *Resolver {
+	return &Resolver{server: server, port: port, tcp: tcp, Timeout: 3000, maxDeleg: 24}
 }
 
-func (r *resolver) Resolve(query *dns.Query) (*DtLookup, error) {
-	var dtquery = &DtQuery{Query: *query}
+func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
+	var dtQ = &DtQuery{Query: *query}
 
-	dtquery.AAFlag = r.flags.AAFlag
-	dtquery.RDFlag = r.flags.RDFlag
-	dtquery.ADFlag = r.flags.ADFlag
-	dtquery.CDFlag = r.flags.CDFlag
+	dtQ.AAFlag = r.Flags.AAFlag
+	dtQ.RDFlag = rd
+	dtQ.ADFlag = r.Flags.ADFlag
+	dtQ.CDFlag = r.Flags.CDFlag
 
-	return r.ask(dtquery)
+	return r.askTo(dtQ, r.server, r.port)
 }
 
-func (r *resolver) Trace(query *dns.Query) (*DtLookup, error) {
+func (r *Resolver) Trace(query *dns.Query) (*DtLookup, error) {
 	var dtquery = &DtQuery{Query: *query}
 	var addrs []*dns.ResourceRecord = nil
 
@@ -50,7 +50,7 @@ func (r *resolver) Trace(query *dns.Query) (*DtLookup, error) {
 	return r.iterate(dtquery, addrs)
 }
 
-func (r *resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*DtLookup, error) {
+func (r *Resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*DtLookup, error) {
 	var lookup *DtLookup = nil
 	var nschain []*dns.ResourceRecord = nil
 	var err error = nil
@@ -60,10 +60,10 @@ func (r *resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*Dt
 	for deleg < r.maxDeleg {
 		srvAddr, _ := getAddr(addresses[ridx])
 		if lookup, err = r.askTo(query, srvAddr, dns.PORT); err != nil {
-			if ridx >= len(addresses) {
-				return nil, fmt.Errorf("unable ...") // TODO error msg
-			}
 			ridx++
+			if ridx >= len(addresses) {
+				return nil, fmt.Errorf("no response from the DNS servers")
+			}
 			continue
 		}
 
@@ -75,14 +75,15 @@ func (r *resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*Dt
 			return nil, fmt.Errorf(dns.Rcode2Msg(lookup.Msg.Rcode))
 		}
 
+		lookup.NsChain = nschain
+
 		if len(lookup.Msg.Answers) != 0 && lookup.Msg.Authoritative {
-			lookup.NsChain = nschain
 			return lookup, nil
 		}
 
 		// process referrals
 		if addresses = r.processReferral(lookup.Msg.Authority, lookup.Msg); len(addresses) == 0 {
-			return nil, fmt.Errorf("no referral, error")
+			return lookup, fmt.Errorf("no more referral")
 		}
 
 		deleg++
@@ -92,7 +93,7 @@ func (r *resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*Dt
 	return nil, fmt.Errorf("max level of delegation(%d) reached", r.maxDeleg)
 }
 
-func (r *resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) []*dns.ResourceRecord {
+func (r *Resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) []*dns.ResourceRecord {
 	var resv []*dns.ResourceRecord = nil
 	var toQuery []*dns.ResourceRecord = nil
 	qChan := make(chan *dns.Query, 5)
@@ -121,7 +122,7 @@ func (r *resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) 
 							doneChan <- false
 							return
 						}
-						if lookup, err := r.Resolve(query); err == nil {
+						if lookup, err := r.Resolve(query, true); err == nil {
 							if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
 								aChan <- lookup.Msg.Answers[0]
 							}
@@ -137,8 +138,10 @@ func (r *resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) 
 		go func() {
 			for i := range toQuery {
 				// IP and IP6
-				qChan <- &dns.Query{Name: toQuery[i].Rdata.(*dns.NS).NSdname, Type: dns.TYPE_A, Class: dns.CLASS_IN}
-				qChan <- &dns.Query{Name: toQuery[i].Rdata.(*dns.NS).NSdname, Type: dns.TYPE_AAAA, Class: dns.CLASS_IN}
+				if toQuery[i].Qtype == dns.TYPE_NS {
+					qChan <- &dns.Query{Name: toQuery[i].Rdata.(*dns.NS).NSdname, Type: dns.TYPE_A, Class: dns.CLASS_IN}
+					qChan <- &dns.Query{Name: toQuery[i].Rdata.(*dns.NS).NSdname, Type: dns.TYPE_AAAA, Class: dns.CLASS_IN}
+				}
 			}
 			close(qChan)
 		}()
@@ -160,12 +163,8 @@ func (r *resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) 
 	return resv
 }
 
-func (r *resolver) ask(query *DtQuery) (*DtLookup, error) {
-	return r.askTo(query, r.server, r.port)
-}
-
-func (r *resolver) askTo(query *DtQuery, server net.IP, port int) (*DtLookup, error) {
-	sock, err := newDSock(server, port, r.tcp, r.timeout)
+func (r *Resolver) askTo(query *DtQuery, server net.IP, port int) (*DtLookup, error) {
+	sock, err := newDSock(server, port, r.tcp, r.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +172,7 @@ func (r *resolver) askTo(query *DtQuery, server net.IP, port int) (*DtLookup, er
 	return r.askToSock(query, sock)
 }
 
-func (r *resolver) askToSock(query *DtQuery, socket *dSocket) (*DtLookup, error) {
+func (r *Resolver) askToSock(query *DtQuery, socket *dSocket) (*DtLookup, error) {
 	var lookup *DtLookup = nil
 	var err error = nil
 
@@ -181,7 +180,7 @@ func (r *resolver) askToSock(query *DtQuery, socket *dSocket) (*DtLookup, error)
 		return nil, err
 	}
 
-	if lookup.Msg.Truncated && !r.ignore {
+	if lookup.Msg.Truncated && !r.Ignore {
 		if socket, err = socket.switchProto(); err != nil {
 			return nil, err
 		}
@@ -196,7 +195,7 @@ func (r *resolver) askToSock(query *DtQuery, socket *dSocket) (*DtLookup, error)
 // Extracts additional ResourceRecord if necessary.
 //
 // Returns additional RR, true if the input rr required additional section processing, otherwise returns nil, false.
-func (r *resolver) getAdditional(rr *dns.ResourceRecord, additional []*dns.ResourceRecord) ([]*dns.ResourceRecord, bool) {
+func (r *Resolver) getAdditional(rr *dns.ResourceRecord, additional []*dns.ResourceRecord) ([]*dns.ResourceRecord, bool) {
 	var rrs []*dns.ResourceRecord = nil
 	var name = ""
 
@@ -225,8 +224,8 @@ func (r *resolver) getAdditional(rr *dns.ResourceRecord, additional []*dns.Resou
 	return rrs, true
 }
 
-func (r *resolver) GetRootNS() (*DtLookup, error) {
-	return r.Resolve(&dns.Query{Name: ".", Type: dns.TYPE_NS, Class: dns.CLASS_IN})
+func (r *Resolver) GetRootNS() (*DtLookup, error) {
+	return r.Resolve(&dns.Query{Name: ".", Type: dns.TYPE_NS, Class: dns.CLASS_IN}, true)
 }
 
 func getAddr(record *dns.ResourceRecord) (net.IP, error) {
