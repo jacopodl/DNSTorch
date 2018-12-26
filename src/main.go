@@ -2,13 +2,12 @@ package main
 
 import (
 	"dns"
+	"dthelper"
 	"flag"
 	"fmt"
 	"net"
 	"os"
 	"resolver"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -57,30 +56,6 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func parseAddress(address string) (net.IP, int, error) {
-	var port uint64 = dns.PORT
-	var err error = nil
-
-	split := strings.Split(address, ":")
-
-	if len(split) > 1 {
-		if port, err = strconv.ParseUint(split[1], 10, 16); err != nil {
-			return nil, 0, fmt.Errorf("malformed port: %s", split[2])
-		}
-	}
-
-	if ip := net.ParseIP(split[0]); ip != nil {
-		return ip, int(port), nil
-	}
-
-	// resolve address
-	if ips, err := net.LookupIP(split[0]); err != nil {
-		return nil, 0, err
-	} else {
-		return ips[0], int(port), nil
-	}
-}
-
 func resolve(domain string, rsv *resolver.Resolver, options *Options) {
 	var query *dns.Query = nil
 	var lookup *resolver.DtLookup = nil
@@ -106,7 +81,7 @@ func resolve(domain string, rsv *resolver.Resolver, options *Options) {
 func main() {
 	var options = Options{}
 	var dnaddr net.IP = nil
-	var dnport = 0
+	var dnport = dns.PORT
 	var stype = ""
 	var sclass = ""
 	var err error = nil
@@ -130,7 +105,11 @@ func main() {
 
 	// assign address
 	if options.ns != "" {
-		if dnaddr, dnport, err = parseAddress(options.ns); err != nil {
+		if dnaddr, dnport, err = dthelper.ParseDSAddr(options.ns); err != nil {
+			onError(err)
+		}
+	} else {
+		if dnaddr, err = dthelper.DefaultDNS(); err != nil {
 			onError(err)
 		}
 	}
