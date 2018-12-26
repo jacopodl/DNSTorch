@@ -57,80 +57,6 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func printRRs(records []*dns.ResourceRecord, prefix string) {
-	dmlen := 0
-	tmlen := 0
-
-	for i := range records {
-		dnlen := len(records[i].Name)
-		qtlen := len(dns.Type2TName(records[i].Qtype))
-		if dnlen > dmlen {
-			dmlen = dnlen
-		}
-		if qtlen > tmlen {
-			tmlen = qtlen
-		}
-	}
-
-	for i := range records {
-		dn := records[i].Name
-		qtype := dns.Type2TName(records[i].Qtype)
-		fmt.Printf("%s %s\t%s\t%d\t%d\t%s\n",
-			prefix,
-			dn+strings.Repeat(" ", dmlen-len(records[i].Name)),
-			qtype+strings.Repeat(" ", tmlen-len(qtype)),
-			records[i].Class,
-			records[i].Ttl,
-			records[i].RDStringsList(false))
-	}
-}
-
-func printLookup(lookup *resolver.DtLookup) {
-	fmt.Println("?? Query")
-	fmt.Printf("?$ Flags: AA: %t RD: %t AD: %t CD: %t\n",
-		lookup.Query.AAFlag,
-		lookup.Query.RDFlag,
-		lookup.Query.ADFlag,
-		lookup.Query.CDFlag)
-	fmt.Printf("? %s\t%s\t%d\n",
-		lookup.Query.Query.Name,
-		dns.Type2TName(lookup.Query.Query.Type),
-		lookup.Query.Query.Class)
-
-	fmt.Println()
-
-	fmt.Println("!! Answer")
-	fmt.Printf("!$ ID: %d\n", lookup.Msg.Identification)
-	fmt.Printf("!$ Flags: AA: %t TC: %t RD: %t RA: %t Z: %t AD: %t CD: %t\n",
-		lookup.Msg.Authoritative,
-		lookup.Msg.Truncated,
-		lookup.Msg.RecursionDesired,
-		lookup.Msg.RecursionAvailable,
-		lookup.Msg.Zero,
-		lookup.Msg.AuthenticatedData,
-		lookup.Msg.CheckingDisabled)
-	fmt.Printf("!$ Rcode: %d (%s)\n", lookup.Msg.Rcode, dns.Rcode2Msg(lookup.Msg.Rcode))
-	if len(lookup.Msg.Answers) > 0 {
-		fmt.Printf("\n!$ Answers (%d)\n", len(lookup.Msg.Answers))
-		printRRs(lookup.Msg.Answers, "!")
-	}
-	if len(lookup.Msg.Authority) > 0 {
-		fmt.Printf("\n!$ Authority (%d)\n", len(lookup.Msg.Authority))
-		printRRs(lookup.Msg.Authority, "!@")
-	}
-	if len(lookup.Msg.Additional) > 0 {
-		fmt.Printf("\n!$ Additional (%d)\n", len(lookup.Msg.Additional))
-		printRRs(lookup.Msg.Additional, "!+")
-	}
-
-	fmt.Println()
-
-	if len(lookup.NsChain) > 0 {
-		fmt.Println(";; NSChain")
-		printRRs(lookup.NsChain, ";")
-	}
-}
-
 func parseAddress(address string) (net.IP, int, error) {
 	var port uint64 = dns.PORT
 	var err error = nil
@@ -174,7 +100,7 @@ func resolve(domain string, rsv *resolver.Resolver, options *Options) {
 		onError(err)
 	}
 
-	printLookup(lookup)
+	resolver.PrintLookup(lookup)
 }
 
 func main() {
