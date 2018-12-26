@@ -10,8 +10,22 @@ const (
 	MAXLBLSIZE = 63
 	MAXDN      = 253
 	LABELSEP   = '.'
-	SLABELSEP  = string(LABELSEP)
+	SLABELSEP  = "."
 )
+
+func ConcatLabel(lbl1, lbl2 string) string {
+	if strings.HasSuffix(lbl1, SLABELSEP) {
+		lbl1 = lbl1[:len(lbl1)-1]
+	}
+	if lbl2 != "" && strings.HasPrefix(lbl2, SLABELSEP) {
+		lbl2 = lbl2[1:]
+	}
+
+	if lbl2 == "" {
+		return lbl1
+	}
+	return lbl1 + SLABELSEP + lbl2
+}
 
 func CountLabel(name string) int {
 	count := 0
