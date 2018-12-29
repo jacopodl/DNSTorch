@@ -14,14 +14,17 @@ const (
 )
 
 func ConcatLabel(lbl1, lbl2 string) string {
-	if strings.HasSuffix(lbl1, SLABELSEP) {
+	if lbl1 != "" && strings.HasSuffix(lbl1, SLABELSEP) {
 		lbl1 = lbl1[:len(lbl1)-1]
 	}
 	if lbl2 != "" && strings.HasPrefix(lbl2, SLABELSEP) {
 		lbl2 = lbl2[1:]
 	}
 
-	if lbl2 == "" {
+	switch {
+	case lbl1 == "":
+		return lbl2
+	case lbl2 == "":
 		return lbl1
 	}
 	return lbl1 + SLABELSEP + lbl2
