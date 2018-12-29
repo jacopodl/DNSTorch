@@ -1,6 +1,7 @@
 package main
 
 import (
+	"action"
 	"dns"
 	"dthelper"
 	"flag"
@@ -26,23 +27,6 @@ const (
  ░                                                     ░                `
 )
 
-type Options struct {
-	aa        bool
-	ad        bool
-	cd        bool
-	class     uint16
-	dict      string
-	ignore    bool
-	nord      bool
-	ns        string
-	snoop     bool
-	tcp       bool
-	timeout   int
-	trace     bool
-	qtype     uint16
-	ztransfer bool
-}
-
 func onError(err error) {
 	fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 	os.Exit(-1)
@@ -54,58 +38,62 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "usage: dnstorch [options] [domain]\n\n")
 	fmt.Fprintf(os.Stderr, "optional arguments:\n")
 	flag.PrintDefaults()
+
+	fmt.Fprintf(os.Stderr, "\nModes:\n\n")
+	for key, mod := range action.Actions {
+		fmt.Fprintf(os.Stderr, "%s\n\t%s\n", key, mod.Description())
+	}
 }
 
-func resolve(domain string, rsv *resolver.Resolver, options *Options) {
-	var query *dns.Query = nil
+func resolve(query *dns.Query, resolv *resolver.Resolver, trace, nord bool) *resolver.DtLookup {
 	var lookup *resolver.DtLookup = nil
 	var err error = nil
 
-	if query, err = dns.NewQuery(domain, options.qtype, options.class); err != nil {
-		onError(err)
-	}
-
-	if !options.trace {
-		lookup, err = rsv.Resolve(query, !options.nord)
+	if !trace {
+		lookup, err = resolv.Resolve(query, !nord)
 	} else {
-		lookup, err = rsv.Trace(query)
+		lookup, err = resolv.Trace(query)
 	}
 
 	if err != nil && lookup == nil {
 		onError(err)
 	}
 
-	resolver.PrintLookup(lookup)
+	return lookup
 }
 
 func main() {
-	var options = Options{}
+	var resolv *resolver.Resolver = nil
 	var dnaddr net.IP = nil
 	var dnport = dns.PORT
-	var stype = ""
-	var sclass = ""
+	var qtype uint16 = 0
+	var qclass uint16 = 0
 	var err error = nil
 
-	flag.StringVar(&stype, "t", "A", "Specify query type")
-	flag.BoolVar(&options.aa, "aa", false, "Set AA flag in query")
-	flag.BoolVar(&options.ad, "ad", false, "Set AD flag in query")
-	flag.BoolVar(&options.cd, "cd", false, "Set checking disabled flag in query")
-	flag.StringVar(&sclass, "class", "IN", "Specify query class [IN, CH, HS, NONE, ANY]")
-	flag.StringVar(&options.dict, "dict", "", "Dictionary file of subdomain to use for brute force")
-	flag.BoolVar(&options.ignore, "ignore", false, "Don't revert to TCP for TC responses")
-	flag.BoolVar(&options.nord, "nord", false, "Unset recursion desired flag in query")
-	flag.StringVar(&options.ns, "ns", "", "Domain server to use.")
-	flag.BoolVar(&options.snoop, "snoop", false, "Perform a cache snooping")
-	flag.IntVar(&options.timeout, "timeout", 800, "Time(ms) to wait for a server to response to a query")
-	flag.BoolVar(&options.trace, "trace", false, "Trace delegation down from root")
-	flag.BoolVar(&options.tcp, "tcp", false, "Use TCP protocol to make queries")
-	flag.BoolVar(&options.ztransfer, "zt", false, "Perform a zone transfer (axfr)")
+	stype := flag.String("type", "A", "Specify query type")
+	aa := flag.Bool("aa", false, "Set AA flag in query")
+	ad := flag.Bool("ad", false, "Set AD flag in query")
+	cd := flag.Bool("cd", false, "Set checking disabled flag in query")
+	sclass := flag.String("class", "IN", "Specify query class [IN, CH, HS, NONE, ANY]")
+	delay := flag.Int("delay", 0, "Delay(ms) between two request")
+	dict := flag.String("dict", "", "Dictionary file of subdomain to use for brute force")
+	ignore := flag.Bool("ignore", false, "Don't revert to TCP for TC responses")
+	nord := flag.Bool("nord", false, "Unset recursion desired flag in query")
+	ns := flag.String("ns", "", "Domain server to use.")
+	timeout := flag.Int("timeout", 800, "Time(ms) to wait for a server to response to a query")
+	trace := flag.Bool("trace", false, "Trace delegation down from root")
+	tcp := flag.Bool("tcp", false, "Use TCP protocol to make queries")
+	mode := flag.String("mode", "", "Set operation mode")
+
+	// Register operation modes
+	action.Register(action.NewSnoop())
+
 	flag.Usage = usage
 	flag.Parse()
 
-	// assign address
-	if options.ns != "" {
-		if dnaddr, dnport, err = dthelper.ParseDSAddr(options.ns); err != nil {
+	// Default DNS server
+	if *ns != "" {
+		if dnaddr, dnport, err = dthelper.ParseDSAddr(*ns); err != nil {
 			onError(err)
 		}
 	} else {
@@ -115,25 +103,48 @@ func main() {
 	}
 
 	// Convert DNS string type to DNS type
-	if tp, ok := dns.TName2Type(stype); ok {
-		options.qtype = tp
+	if tp, ok := dns.TName2Type(*stype); ok {
+		qtype = tp
 	} else {
-		onError(fmt.Errorf("unknown type: %s", stype))
+		onError(fmt.Errorf("unknown type: %s", *stype))
 	}
 
 	// Convert DNS string class to DNS class
-	if cl, ok := dns.CName2Class(sclass); ok {
-		options.class = cl
+	if cl, ok := dns.CName2Class(*sclass); ok {
+		qclass = cl
 	} else {
 		onError(fmt.Errorf("unknown class: %s", sclass))
 	}
 
-	rsv := resolver.NewResolver(dnaddr, dnport, options.tcp)
-	rsv.Timeout = time.Duration(options.timeout)
-	rsv.Ignore = options.ignore
-	rsv.Flags.AAFlag = options.aa
-	rsv.Flags.ADFlag = options.ad
-	rsv.Flags.CDFlag = options.cd
+	// Resolver setup
+	resolv = resolver.NewResolver(dnaddr, dnport, *tcp)
+	resolv.Ignore = *ignore
+	resolv.Timeout = time.Duration(*timeout)
+	resolv.Flags.AAFlag = *aa
+	resolv.Flags.ADFlag = *ad
+	resolv.Flags.CDFlag = *cd
 
-	resolve(flag.Arg(0), rsv, &options)
+	if *mode == "" {
+		if query, err := dns.NewQuery(flag.Arg(0), qtype, qclass); err == nil {
+			resolver.PrintLookup(resolve(query, resolv, *trace, *nord))
+		} else {
+			onError(err)
+		}
+		return
+	}
+
+	opts := &action.Options{
+		Delay:  time.Duration(*delay) * time.Millisecond,
+		Dict:   *dict,
+		Class:  qclass,
+		Type:   qtype,
+		Resolv: resolv}
+
+	if act, err := action.Init(*mode, opts); err != nil {
+		onError(err)
+	} else {
+		if err = act.Exec(flag.Arg(0)); err != nil {
+			onError(err)
+		}
+	}
 }

@@ -155,7 +155,7 @@ var (
 		RCODE_BADVERS:        "bad OPT version / TSIG signature failure",
 		RCODE_BADKEY:         "key not recognized",
 		RCODE_BADTIME:        "signature out of time window",
-		RCODE_BADMODE:        "bad TKEY mode",
+		RCODE_BADMODE:        "bad TKEY action",
 		RCODE_BADNAME:        "duplicate key name",
 		RCODE_BADALG:         "algorithm not supported",
 		RCODE_BADTRUNC:       "bad truncation"}
