@@ -87,6 +87,7 @@ func main() {
 
 	// Register operation modes
 	action.Register(action.NewSnoop())
+	action.Register(action.NewEnum())
 
 	flag.Usage = usage
 	flag.Parse()
