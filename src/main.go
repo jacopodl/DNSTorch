@@ -28,21 +28,8 @@ const (
 )
 
 func onError(err error) {
-	fmt.Fprintf(os.Stderr, "%s\n", err.Error())
+	dthelper.PrintErr("%s\n", err.Error())
 	os.Exit(-1)
-}
-
-func usage() {
-	fmt.Fprintf(os.Stderr, LOGO)
-	fmt.Fprintf(os.Stderr, " V: %s\n\n", VERSION)
-	fmt.Fprintf(os.Stderr, "usage: dnstorch [options] [domain]\n\n")
-	fmt.Fprintf(os.Stderr, "optional arguments:\n")
-	flag.PrintDefaults()
-
-	fmt.Fprintf(os.Stderr, "\nModes:\n\n")
-	for key, mod := range action.Actions {
-		fmt.Fprintf(os.Stderr, "%s\n\t%s\n", key, mod.Description())
-	}
 }
 
 func resolve(query *dns.Query, resolv *resolver.Resolver, trace, nord bool) *resolver.DtLookup {
@@ -60,6 +47,19 @@ func resolve(query *dns.Query, resolv *resolver.Resolver, trace, nord bool) *res
 	}
 
 	return lookup
+}
+
+func usage() {
+	fmt.Fprintf(os.Stderr, LOGO)
+	fmt.Fprintf(os.Stderr, " V: %s\n\n", VERSION)
+	fmt.Fprintf(os.Stderr, "usage: dnstorch [options] [domain]\n\n")
+	fmt.Fprintf(os.Stderr, "optional arguments:\n")
+	flag.PrintDefaults()
+
+	fmt.Fprintf(os.Stderr, "\nModes:\n\n")
+	for key, mod := range action.Actions {
+		fmt.Fprintf(os.Stderr, "%s\n\t%s\n", key, mod.Description())
+	}
 }
 
 func main() {
@@ -88,6 +88,7 @@ func main() {
 	// Register operation modes
 	action.Register(action.NewSnoop())
 	action.Register(action.NewEnum())
+	action.Register(action.NewZT())
 
 	flag.Usage = usage
 	flag.Parse()

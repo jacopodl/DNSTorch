@@ -22,6 +22,10 @@ func NewResolver(server net.IP, port int, tcp bool) *Resolver {
 }
 
 func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
+	return r.ResolveWith(query, rd, r.tcp, r.server, r.port)
+}
+
+func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, port int) (*DtLookup, error) {
 	var dtQ = &DtQuery{Query: *query}
 
 	dtQ.AAFlag = r.Flags.AAFlag
@@ -29,7 +33,7 @@ func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
 	dtQ.ADFlag = r.Flags.ADFlag
 	dtQ.CDFlag = r.Flags.CDFlag
 
-	return r.askTo(dtQ, r.server, r.port)
+	return r.askTo(dtQ, server, port, tcp)
 }
 
 func (r *Resolver) Trace(query *dns.Query) (*DtLookup, error) {
@@ -59,7 +63,7 @@ func (r *Resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*Dt
 
 	for deleg < r.maxDeleg {
 		srvAddr, _ := getAddr(addresses[ridx])
-		if lookup, err = r.askTo(query, srvAddr, dns.PORT); err != nil {
+		if lookup, err = r.askTo(query, srvAddr, dns.PORT, r.tcp); err != nil {
 			ridx++
 			if ridx >= len(addresses) {
 				return nil, fmt.Errorf("no response from the DNS servers")
@@ -163,8 +167,8 @@ func (r *Resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) 
 	return resv
 }
 
-func (r *Resolver) askTo(query *DtQuery, server net.IP, port int) (*DtLookup, error) {
-	sock, err := newDSock(server, port, r.tcp, r.Timeout)
+func (r *Resolver) askTo(query *DtQuery, server net.IP, port int, tcp bool) (*DtLookup, error) {
+	sock, err := newDSock(server, port, tcp, r.Timeout)
 	if err != nil {
 		return nil, err
 	}
