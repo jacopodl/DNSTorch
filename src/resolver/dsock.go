@@ -82,7 +82,7 @@ func (d *dSocket) recvTCP(lookup *DtLookup) error {
 	tlen := -1
 
 	for clen != tlen {
-		if length, err := d.conn.Read(buf); err != nil {
+		if length, err := d.conn.Read(buf[clen:]); err != nil {
 			return err
 		} else {
 			if tlen < 0 {
@@ -93,7 +93,6 @@ func (d *dSocket) recvTCP(lookup *DtLookup) error {
 			clen += length
 		}
 	}
-
 	lookup.Msg = dns.FromBytes(buf[:tlen])
 	return nil
 }
