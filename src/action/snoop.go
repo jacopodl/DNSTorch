@@ -4,7 +4,6 @@ import (
 	"dns"
 	"dthelper"
 	"fmt"
-	"os"
 	"resolver"
 	"time"
 )
@@ -42,15 +41,14 @@ func (s *snoop) Init(soptions string, options *Options) (Action, error) {
 func (s *snoop) Exec(domain string) error {
 	dnchan := make(chan string, 5)
 	done := make(chan bool)
+	count := 0
 
-	fmt.Println("Performing cache snooping...")
+	dthelper.PrintInfo("Performing cache snooping...\n")
 
 	go func() {
-		count := 0
 		for name := range dnchan {
-			count++
 			if lookup, err := s.inCacheRD(name, s.Resolv); err != nil {
-				fmt.Fprintf(os.Stderr, "%s: %s\n", name, err)
+				dthelper.PrintErr("%s: %s\n", name, err)
 			} else {
 				s.printResult(lookup)
 			}
@@ -58,17 +56,21 @@ func (s *snoop) Exec(domain string) error {
 				time.Sleep(s.Delay)
 			}
 		}
-		if count == 0 {
-			fmt.Fprintln(os.Stderr, "domains list is empty")
-		}
 		close(done)
 	}()
 
 	if s.dict == nil {
+		if domain == "" {
+			return fmt.Errorf("empty domain name")
+		}
 		dnchan <- domain
 	} else {
 		for dname := range s.dict.Data {
 			dnchan <- dname
+			count++
+		}
+		if count == 0 {
+			return fmt.Errorf("empty domains list")
 		}
 	}
 

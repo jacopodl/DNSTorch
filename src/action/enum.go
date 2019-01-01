@@ -4,7 +4,6 @@ import (
 	"dns"
 	"dthelper"
 	"fmt"
-	"os"
 	"resolver"
 	"sync"
 	"time"
@@ -29,18 +28,18 @@ func (e *enum) Description() string {
 }
 
 func (e *enum) Init(soptions string, options *Options) (Action, error) {
-	snp := &enum{Options: options}
+	enm := &enum{Options: options}
 	var err error = nil
 
 	if options.Dict == "" {
 		return nil, fmt.Errorf("enum requires a dictionary file, use -dict %%filename%%")
 	}
 
-	if snp.dict, err = dthelper.NewFDict(options.Dict, dthelper.DEFAULTQLEN); err != nil {
+	if enm.dict, err = dthelper.NewFDict(options.Dict, dthelper.DEFAULTQLEN); err != nil {
 		return nil, err
 	}
 
-	return snp, nil
+	return enm, nil
 }
 
 func (e *enum) Exec(domain string) error {
@@ -71,7 +70,7 @@ func (e *enum) Exec(domain string) error {
 					erend = true
 					break
 				}
-				fmt.Fprintln(os.Stderr, err)
+				dthelper.PrintErr("%s\n", err)
 			}
 		}
 		close(done)
