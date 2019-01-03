@@ -5,7 +5,6 @@ import (
 	"dthelper"
 	"fmt"
 	"resolver"
-	"time"
 )
 
 type snoop struct {
@@ -39,45 +38,43 @@ func (s *snoop) Init(soptions string, options *Options) (Action, error) {
 }
 
 func (s *snoop) Exec(domain string) error {
-	dnchan := make(chan string, 5)
-	done := make(chan bool)
+	total := 0
 	count := 0
 
 	dthelper.PrintInfo("Performing cache snooping...\n")
-
-	go func() {
-		for name := range dnchan {
-			if lookup, err := s.inCacheRD(name, s.Resolv); err != nil {
-				dthelper.PrintErr("%s: %s\n", name, err)
-			} else {
-				s.printResult(lookup)
-			}
-			if s.Delay > 0 {
-				time.Sleep(s.Delay)
-			}
-		}
-		close(done)
-	}()
 
 	if s.dict == nil {
 		if domain == "" {
 			return fmt.Errorf("empty domain name")
 		}
-		dnchan <- domain
-	} else {
-		for dname := range s.dict.Data {
-			dnchan <- dname
+		total = 1
+		if s.snoopAndPrint(domain) {
 			count++
 		}
-		if count == 0 {
+	} else {
+		for dname := range s.dict.Data {
+			total++
+			if s.snoopAndPrint(dname) {
+				count++
+			}
+		}
+		if total == 0 {
 			return fmt.Errorf("empty domains list")
 		}
 	}
-
-	close(dnchan)
-	<-done
-
+	fmt.Println()
+	dthelper.PrintOk("%d/%d found!", count, total)
 	return nil
+}
+
+func (s *snoop) snoopAndPrint(name string) bool {
+	lookup, err := s.inCacheRD(name, s.Resolv)
+	if err != nil {
+		dthelper.PrintErr("%s: %s\n", name, err)
+		return false
+	}
+	s.printResult(lookup)
+	return true
 }
 
 func (s *snoop) inCacheRD(domain string, resolv *resolver.Resolver) (*resolver.DtLookup, error) {
@@ -89,12 +86,12 @@ func (s *snoop) inCacheRD(domain string, resolv *resolver.Resolver) (*resolver.D
 }
 
 func (s *snoop) printResult(lookup *resolver.DtLookup) {
-	fmt.Printf("\n-- %s\n", lookup.Query.Query.Name)
 	if lookup.Msg.Rcode == dns.RCODE_NOERR {
 		if len(lookup.Msg.Answers) > 0 {
+			fmt.Printf("\n-- %s\n", lookup.Query.Query.Name)
 			resolver.PrintRRs(lookup.Msg.Answers, "")
 		}
-	} else {
-		fmt.Printf("%s\n", dns.Rcode2Msg(lookup.Msg.Rcode))
+		return
 	}
+	fmt.Printf("%s: %s\n", lookup.Query.Query.Name, dns.Rcode2Msg(lookup.Msg.Rcode))
 }
