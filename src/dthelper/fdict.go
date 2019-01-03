@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 )
 
 const DEFAULTQLEN = 10
@@ -40,10 +41,10 @@ func (f *FDict) readFile() {
 			}
 			break
 		} else {
-			if len(buf) == 0 {
+			str = string(buf)
+			if !filterStr(str) {
 				continue
 			}
-			str = string(buf)
 		}
 		select {
 		case <-f.stopch:
@@ -61,4 +62,14 @@ func (f *FDict) Close() {
 
 func (f *FDict) IsClosed() bool {
 	return f.closed
+}
+
+func filterStr(str string) bool {
+	switch {
+	case len(str) == 0:
+		return false
+	case strings.HasPrefix(str, "#"):
+		return false
+	}
+	return true
 }
