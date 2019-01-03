@@ -90,7 +90,7 @@ func (z *ztransfer) getIpAddr(domain string) (net.IP, error) {
 }
 
 func (z *ztransfer) transfer(domain string, server net.IP) (*resolver.DtLookup, bool) {
-	query, _ := dns.NewQuery(domain, dns.TYPE_AXFR, dns.CLASS_IN)
+	query, _ := dns.NewQuery(domain, dns.TYPE_AXFR, z.Class)
 	lookup, err := z.Resolv.ResolveWith(query, false, true, server, dns.PORT)
 	if err == nil {
 		if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
