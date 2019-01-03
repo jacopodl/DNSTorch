@@ -38,19 +38,12 @@ func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, po
 
 func (r *Resolver) Trace(query *dns.Query) (*DtLookup, error) {
 	var dtquery = &DtQuery{Query: *query}
-	var addrs []*dns.ResourceRecord = nil
 
 	// ask for ROOT
-	if rootlk, err := r.GetRootNS(); err != nil {
-		return nil, fmt.Errorf("unable to obtain ROOT name servers(%s)", err.Error())
-	} else {
-		// process answers and extracts root addresses
-		addrs = r.processReferral(rootlk.Msg.Answers, rootlk.Msg)
-		if addrs == nil {
-			return nil, fmt.Errorf("unable to resolve root addresses")
-		}
+	addrs, err := r.GetRootAddrs()
+	if err != nil {
+		return nil, err
 	}
-
 	return r.iterate(dtquery, addrs)
 }
 
@@ -230,6 +223,19 @@ func (r *Resolver) getAdditional(rr *dns.ResourceRecord, additional []*dns.Resou
 
 func (r *Resolver) GetRootNS() (*DtLookup, error) {
 	return r.Resolve(&dns.Query{Name: ".", Type: dns.TYPE_NS, Class: dns.CLASS_IN}, true)
+}
+
+func (r *Resolver) GetRootAddrs() ([]*dns.ResourceRecord, error) {
+	rootlk, err := r.GetRootNS()
+	if err != nil {
+		return nil, fmt.Errorf("unable to obtain ROOT name servers(%s)", err.Error())
+	}
+	// process answers and extracts root addresses
+	addrs := r.processReferral(rootlk.Msg.Answers, rootlk.Msg)
+	if addrs == nil {
+		return nil, fmt.Errorf("unable to resolve root addresses")
+	}
+	return addrs, nil
 }
 
 func getAddr(record *dns.ResourceRecord) (net.IP, error) {
