@@ -64,6 +64,7 @@ func usage() {
 
 func main() {
 	var resolv *resolver.Resolver = nil
+	var fdict *dthelper.FDict = nil
 	var dnaddr net.IP = nil
 	var dnport = dns.PORT
 	var qtype uint16 = 0
@@ -116,10 +117,10 @@ func main() {
 	if cl, ok := dns.CName2Class(*sclass); ok {
 		qclass = cl
 	} else {
-		onError(fmt.Errorf("unknown class: %s", sclass))
+		onError(fmt.Errorf("unknown class: %s", *sclass))
 	}
 
-	// Resolver setup
+	// Setup Resolver
 	resolv = resolver.NewResolver(dnaddr, dnport, *tcp)
 	resolv.Ignore = *ignore
 	resolv.Timeout = time.Duration(*timeout)
@@ -136,18 +137,25 @@ func main() {
 		return
 	}
 
+	// Load dict file
+	if *dict != "" {
+		if fdict, err = dthelper.NewFDict(*dict, dthelper.DEFAULTQLEN); err != nil {
+			onError(err)
+		}
+	}
+
 	opts := &action.Options{
 		Delay:   time.Duration(*delay) * time.Millisecond,
-		Dict:    *dict,
+		Dict:    fdict,
 		Class:   qclass,
 		Type:    qtype,
 		Workers: *workers,
 		Resolv:  resolv}
 
-	if act, err := action.Init(*mode, opts); err != nil {
+	if act, err := action.Get(*mode); err != nil {
 		onError(err)
 	} else {
-		if err = act.Exec(flag.Arg(0)); err != nil {
+		if err = act.Exec(flag.Arg(0), opts); err != nil {
 			onError(err)
 		}
 	}

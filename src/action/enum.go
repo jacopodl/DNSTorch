@@ -8,8 +8,8 @@ import (
 )
 
 type enum struct {
-	*Options
-	dict *dthelper.FDict
+	found int
+	total int
 }
 
 func NewEnum() Action {
@@ -24,29 +24,23 @@ func (e *enum) Description() string {
 	return "Perform brute force subdomain enumeration"
 }
 
-func (e *enum) Init(soptions string, options *Options) (Action, error) {
-	enm := &enum{Options: options}
-	var err error = nil
-
-	if options.Dict == "" {
-		return nil, fmt.Errorf("enum requires a dictionary file, use -dict %%filename%%")
-	}
-
-	if enm.dict, err = dthelper.NewFDict(options.Dict, dthelper.DEFAULTQLEN); err != nil {
-		return nil, err
-	}
-
-	return enm, nil
-}
-
-func (e *enum) Exec(domain string) error {
+func (e *enum) Exec(domain string, options *Options) error {
 	if domain == "" {
 		return fmt.Errorf("empty domain name")
 	}
 
-	w := dthelper.NewWorkers(e.Delay, e.enumWorker, e.printResult)
-	w.Spawn(e.Workers, domain)
+	if options.Dict == nil {
+		return fmt.Errorf("enum requires a dictionary file")
+	}
+
+	dthelper.PrintInfo("Performing enumeration on target %s...\n\n", domain)
+
+	w := dthelper.NewWorkers(options.Delay, e.enumWorker, e.printResult)
+	w.Spawn(options.Workers, domain, options)
 	w.Wait()
+
+	fmt.Println()
+	dthelper.PrintOk("%d/%d found!\n", e.found, e.total)
 
 	return nil
 }
@@ -56,12 +50,15 @@ func (e *enum) enumWorker(params ...interface{}) (interface{}, bool) {
 	var lookup *resolver.DtLookup = nil
 	var err error = nil
 
-	prefix, ok := <-e.dict.Data
+	domain := params[0].(string)
+	opts := params[1].(*Options)
+
+	prefix, ok := <-opts.Dict.Data
 	if !ok {
 		return nil, true
 	}
-	if query, err = dns.NewQuery(dns.ConcatLabel(prefix, params[0].(string)), e.Type, e.Class); err == nil {
-		if lookup, err = e.Resolv.Resolve(query, true); err == nil {
+	if query, err = dns.NewQuery(dns.ConcatLabel(prefix, domain), opts.Type, opts.Class); err == nil {
+		if lookup, err = opts.Resolv.Resolve(query, true); err == nil {
 			return dthelper.BgResult{Data: lookup}, false
 		}
 	}
@@ -70,10 +67,12 @@ func (e *enum) enumWorker(params ...interface{}) (interface{}, bool) {
 
 func (e *enum) printResult(data interface{}) {
 	result := data.(dthelper.BgResult)
+	e.total++
 	if !result.IsError {
 		lookup := result.Data.(*resolver.DtLookup)
 		if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
 			resolver.PrintRRs(lookup.Msg.Answers, "!")
+			e.found++
 		}
 		return
 	}

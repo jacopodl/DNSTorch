@@ -1,6 +1,7 @@
 package action
 
 import (
+	"dthelper"
 	"fmt"
 	"resolver"
 	"strings"
@@ -13,7 +14,7 @@ var Actions = map[string]Action{}
 
 type Options struct {
 	Delay   time.Duration
-	Dict    string
+	Dict    *dthelper.FDict
 	Class   uint16
 	Type    uint16
 	Workers int
@@ -23,14 +24,12 @@ type Options struct {
 type Action interface {
 	Name() string
 	Description() string
-	Init(soptions string, options *Options) (Action, error)
-	Exec(domain string) error
+	Exec(domain string, options *Options) error
 }
 
-func Init(nameopt string, options *Options) (Action, error) {
-	name, opt := splitActionOptions(nameopt)
+func Get(name string) (Action, error) {
 	if mod, ok := Actions[name]; ok {
-		return mod.Init(opt, options)
+		return mod, nil
 	}
 	return nil, fmt.Errorf("unknown action %s, aborted", name)
 }

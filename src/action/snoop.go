@@ -8,12 +8,9 @@ import (
 	"time"
 )
 
-type snoop struct {
-	*Options
-	dict *dthelper.FDict
-}
+type snoop struct{}
 
-func NewSnoop() Action {
+func NewSnoop() *snoop {
 	return &snoop{}
 }
 
@@ -25,41 +22,28 @@ func (s *snoop) Description() string {
 	return "Perform a DNS cache snooping"
 }
 
-func (s *snoop) Init(soptions string, options *Options) (Action, error) {
-	snp := &snoop{Options: options}
-	var err error = nil
-
-	if options.Dict != "" {
-		if snp.dict, err = dthelper.NewFDict(options.Dict, dthelper.DEFAULTQLEN); err != nil {
-			return nil, err
-		}
-	}
-
-	return snp, nil
-}
-
-func (s *snoop) Exec(domain string) error {
+func (s *snoop) Exec(domain string, options *Options) error {
 	total := 0
 	count := 0
 
 	dthelper.PrintInfo("Performing cache snooping...\n")
 
-	if s.dict == nil {
+	if options.Dict == nil {
 		if domain == "" {
 			return fmt.Errorf("empty domain name")
 		}
 		total = 1
-		if s.snoopAndPrint(domain) {
+		if s.snoopAndPrint(domain, options) {
 			count++
 		}
 	} else {
-		for dname := range s.dict.Data {
+		for dname := range options.Dict.Data {
 			total++
-			if s.snoopAndPrint(dname) {
+			if s.snoopAndPrint(dname, options) {
 				count++
 			}
-			if s.Delay > 0 {
-				time.Sleep(s.Delay)
+			if options.Delay > 0 {
+				time.Sleep(options.Delay)
 			}
 		}
 		if total == 0 {
@@ -71,20 +55,20 @@ func (s *snoop) Exec(domain string) error {
 	return nil
 }
 
-func (s *snoop) inCacheRD(domain string, resolv *resolver.Resolver) (bool, *resolver.DtLookup, error) {
-	query, err := dns.NewQuery(domain, s.Type, s.Class)
+func (s *snoop) inCacheRD(domain string, options *Options) (bool, *resolver.DtLookup, error) {
+	query, err := dns.NewQuery(domain, options.Type, options.Class)
 	if err != nil {
 		return false, nil, err
 	}
-	lookup, err := resolv.Resolve(query, false)
+	lookup, err := options.Resolv.Resolve(query, false)
 	if err != nil {
 		return false, nil, err
 	}
 	return lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0, lookup, nil
 }
 
-func (s *snoop) snoopAndPrint(name string) bool {
-	cached, lookup, err := s.inCacheRD(name, s.Resolv)
+func (s *snoop) snoopAndPrint(name string, options *Options) bool {
+	cached, lookup, err := s.inCacheRD(name, options)
 	if err != nil {
 		dthelper.PrintErr("%s: %s\n", name, err)
 		return false

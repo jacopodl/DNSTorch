@@ -8,9 +8,7 @@ import (
 	"resolver"
 )
 
-type ztransfer struct {
-	*Options
-}
+type ztransfer struct{}
 
 func NewZT() Action {
 	return &ztransfer{}
@@ -24,11 +22,7 @@ func (z *ztransfer) Description() string {
 	return "Perform DNS zone transfer"
 }
 
-func (z *ztransfer) Init(soptions string, options *Options) (Action, error) {
-	return &ztransfer{Options: options}, nil
-}
-
-func (z *ztransfer) Exec(domain string) error {
+func (z *ztransfer) Exec(domain string, options *Options) error {
 	var query *dns.Query = nil
 	var lookup *resolver.DtLookup = nil
 	var server net.IP = nil
@@ -36,12 +30,12 @@ func (z *ztransfer) Exec(domain string) error {
 
 	dthelper.PrintInfo("Testing NS servers for zone transfer...\n")
 
-	if query, err = dns.NewQuery(domain, dns.TYPE_NS, z.Class); err != nil {
+	if query, err = dns.NewQuery(domain, dns.TYPE_NS, options.Class); err != nil {
 		return err
 	}
 
 	dthelper.PrintInfo("Enumerating all NS servers...\n")
-	if lookup, err = z.Resolv.Resolve(query, true); err != nil {
+	if lookup, err = options.Resolv.Resolve(query, true); err != nil {
 		return err
 	}
 
@@ -52,11 +46,11 @@ func (z *ztransfer) Exec(domain string) error {
 	for i := range lookup.Msg.Answers {
 		ns := lookup.Msg.Answers[i].Rdata.(*dns.NS).NSdname
 		dthelper.PrintInfo("Resolving A and AAAA record for %s server...\n", ns)
-		if server, err = z.getIpAddr(ns); err != nil {
+		if server, err = z.getIpAddr(ns, options.Resolv); err != nil {
 			continue
 		}
 		dthelper.PrintInfo("Trying zone transfer on %s(%s)...\n", ns, server)
-		if lk, ok := z.transfer(domain, server); ok {
+		if lk, ok := z.transfer(domain, options.Class, options.Resolv, server); ok {
 			dthelper.PrintOk("Zone transfer was successful on server %s(%s)\n\n", ns, server)
 			resolver.PrintLookup(lk)
 			return nil
@@ -66,7 +60,7 @@ func (z *ztransfer) Exec(domain string) error {
 	return fmt.Errorf("zone transfer failed")
 }
 
-func (z *ztransfer) getIpAddr(domain string) (net.IP, error) {
+func (z *ztransfer) getIpAddr(domain string, resolv *resolver.Resolver) (net.IP, error) {
 	var query *dns.Query = nil
 	var lookup *resolver.DtLookup = nil
 	var err error = nil
@@ -75,7 +69,7 @@ func (z *ztransfer) getIpAddr(domain string) (net.IP, error) {
 
 	for i := range types {
 		query, _ = dns.NewQuery(domain, types[i], dns.CLASS_IN)
-		if lookup, err = z.Resolv.Resolve(query, true); err == nil {
+		if lookup, err = resolv.Resolve(query, true); err == nil {
 			if len(lookup.Msg.Answers) > 0 {
 				switch lookup.Msg.Answers[0].Qtype {
 				case dns.TYPE_A:
@@ -89,9 +83,9 @@ func (z *ztransfer) getIpAddr(domain string) (net.IP, error) {
 	return nil, fmt.Errorf("A and AAAA record not found for %s", domain)
 }
 
-func (z *ztransfer) transfer(domain string, server net.IP) (*resolver.DtLookup, bool) {
-	query, _ := dns.NewQuery(domain, dns.TYPE_AXFR, z.Class)
-	lookup, err := z.Resolv.ResolveWith(query, false, true, server, dns.PORT)
+func (z *ztransfer) transfer(domain string, class uint16, resolv *resolver.Resolver, server net.IP) (*resolver.DtLookup, bool) {
+	query, _ := dns.NewQuery(domain, dns.TYPE_AXFR, class)
+	lookup, err := resolv.ResolveWith(query, false, true, server, dns.PORT)
 	if err == nil {
 		if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
 			return lookup, true
