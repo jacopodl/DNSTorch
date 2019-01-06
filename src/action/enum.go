@@ -5,14 +5,11 @@ import (
 	"dthelper"
 	"fmt"
 	"resolver"
-	"sync"
-	"time"
 )
 
 type enum struct {
 	*Options
 	dict *dthelper.FDict
-	wg   sync.WaitGroup
 }
 
 func NewEnum() Action {
@@ -47,72 +44,38 @@ func (e *enum) Exec(domain string) error {
 		return fmt.Errorf("empty domain name")
 	}
 
-	lkchan := make(chan *resolver.DtLookup, 5)
-	erchan := make(chan error, 5)
-	done := make(chan bool)
-
-	e.wg.Add(1)
-	go e.enumWorker(domain, lkchan, erchan)
-
-	go func() {
-		lkend := false
-		erend := false
-		for !lkend || !erend {
-			select {
-			case lookup, ok := <-lkchan:
-				if !ok {
-					lkend = true
-					break
-				}
-				e.printResult(lookup)
-			case err, ok := <-erchan:
-				if !ok {
-					erend = true
-					break
-				}
-				dthelper.PrintErr("%s\n", err)
-			}
-		}
-		close(done)
-	}()
-
-	e.wg.Wait()
-	close(lkchan)
-	close(erchan)
-	<-done
+	w := dthelper.NewWorkers(e.Delay, e.enumWorker, e.printResult)
+	w.Spawn(e.Workers, domain)
+	w.Wait()
 
 	return nil
 }
 
-func (e *enum) enumWorker(domain string, lkchan chan *resolver.DtLookup, erchan chan error) {
+func (e *enum) enumWorker(params ...interface{}) (interface{}, bool) {
 	var query *dns.Query = nil
 	var lookup *resolver.DtLookup = nil
 	var err error = nil
 
-	defer e.wg.Done()
-
-	for {
-		if e.Delay > 0 {
-			time.Sleep(e.Delay)
-		}
-		select {
-		case prefix, ok := <-e.dict.Data:
-			if !ok {
-				return
-			}
-			if query, err = dns.NewQuery(dns.ConcatLabel(prefix, domain), e.Type, e.Class); err == nil {
-				if lookup, err = e.Resolv.Resolve(query, true); err == nil {
-					lkchan <- lookup
-					continue
-				}
-			}
-			erchan <- err
+	prefix, ok := <-e.dict.Data
+	if !ok {
+		return nil, true
+	}
+	if query, err = dns.NewQuery(dns.ConcatLabel(prefix, params[0].(string)), e.Type, e.Class); err == nil {
+		if lookup, err = e.Resolv.Resolve(query, true); err == nil {
+			return dthelper.BgResult{Data: lookup}, false
 		}
 	}
+	return dthelper.BgResult{Data: err, IsError: true}, false
 }
 
-func (e *enum) printResult(lookup *resolver.DtLookup) {
-	if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
-		resolver.PrintRRs(lookup.Msg.Answers, "!")
+func (e *enum) printResult(data interface{}) {
+	result := data.(dthelper.BgResult)
+	if !result.IsError {
+		lookup := result.Data.(*resolver.DtLookup)
+		if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
+			resolver.PrintRRs(lookup.Msg.Answers, "!")
+		}
+		return
 	}
+	dthelper.PrintErr("%s\n", result.Data.(error).Error())
 }

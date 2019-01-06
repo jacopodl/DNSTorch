@@ -12,11 +12,12 @@ const OPTSEP = "#"
 var Actions = map[string]Action{}
 
 type Options struct {
-	Delay  time.Duration
-	Dict   string
-	Class  uint16
-	Type   uint16
-	Resolv *resolver.Resolver
+	Delay   time.Duration
+	Dict    string
+	Class   uint16
+	Type    uint16
+	Workers int
+	Resolv  *resolver.Resolver
 }
 
 type Action interface {

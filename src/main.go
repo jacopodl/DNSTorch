@@ -70,7 +70,6 @@ func main() {
 	var qclass uint16 = 0
 	var err error = nil
 
-	stype := flag.String("type", "A", "Specify query type")
 	aa := flag.Bool("aa", false, "Set AA flag in query")
 	ad := flag.Bool("ad", false, "Set AD flag in query")
 	cd := flag.Bool("cd", false, "Set checking disabled flag in query")
@@ -83,7 +82,9 @@ func main() {
 	timeout := flag.Int("timeout", 800, "Time(ms) to wait for a server to response to a query")
 	trace := flag.Bool("trace", false, "Trace delegation down from root")
 	tcp := flag.Bool("tcp", false, "Use TCP protocol to make queries")
+	stype := flag.String("type", "A", "Specify query type")
 	mode := flag.String("mode", "", "Set operation mode")
+	workers := flag.Int("workers", 1, "Set number of active workers")
 
 	// Register operation modes
 	action.Register(action.NewSnoop())
@@ -136,11 +137,12 @@ func main() {
 	}
 
 	opts := &action.Options{
-		Delay:  time.Duration(*delay) * time.Millisecond,
-		Dict:   *dict,
-		Class:  qclass,
-		Type:   qtype,
-		Resolv: resolv}
+		Delay:   time.Duration(*delay) * time.Millisecond,
+		Dict:    *dict,
+		Class:   qclass,
+		Type:    qtype,
+		Workers: *workers,
+		Resolv:  resolv}
 
 	if act, err := action.Init(*mode, opts); err != nil {
 		onError(err)
