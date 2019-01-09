@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"golang.org/x/sys/windows/registry"
 	"net"
+	"strings"
 )
 
 func DefaultDNS() (net.IP, error) {
@@ -14,7 +15,7 @@ func DefaultDNS() (net.IP, error) {
 	defer key.Close()
 
 	if v, _, err := key.GetStringValue("DhcpNameServer"); err == nil {
-		return net.ParseIP(v), nil
+		return net.ParseIP(strings.Fields(v)[0]), nil
 	}
 	return nil, fmt.Errorf("nameserver not found")
 }
