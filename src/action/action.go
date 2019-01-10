@@ -12,7 +12,7 @@ const OPTSEP = "#"
 
 var Actions = map[string]Action{}
 
-type Options struct {
+type ActOpts struct {
 	Delay   time.Duration
 	Dict    *dthelper.FDict
 	Class   uint16
@@ -24,7 +24,7 @@ type Options struct {
 type Action interface {
 	Name() string
 	Description() string
-	Exec(domain string, options *Options) error
+	Exec(domain string, options *ActOpts) error
 }
 
 func Get(name string) (Action, error) {

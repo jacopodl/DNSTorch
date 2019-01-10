@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func ParseDSAddr(address string) (net.IP, int, error) {
+func ParseDNSAddr(address string) (net.IP, int, error) {
 	var port uint64 = dns.PORT
 	var err error = nil
 
@@ -30,4 +30,15 @@ func ParseDSAddr(address string) (net.IP, int, error) {
 	} else {
 		return ips[0], int(port), nil
 	}
+}
+
+func ParseTarget(name string) (string, bool) {
+	var addr = net.ParseIP(name)
+	if addr != nil {
+		if addr.To4() != nil {
+			return dns.IP2Label(addr), true
+		}
+		return dns.IP62Label(addr), true
+	}
+	return name, false
 }

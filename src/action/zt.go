@@ -22,7 +22,7 @@ func (z *ztransfer) Description() string {
 	return "Perform DNS zone transfer"
 }
 
-func (z *ztransfer) Exec(domain string, options *Options) error {
+func (z *ztransfer) Exec(domain string, options *ActOpts) error {
 	var query *dns.Query = nil
 	var lookup *resolver.DtLookup = nil
 	var server net.IP = nil

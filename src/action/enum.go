@@ -24,7 +24,7 @@ func (e *enum) Description() string {
 	return "Perform brute force subdomain enumeration"
 }
 
-func (e *enum) Exec(domain string, options *Options) error {
+func (e *enum) Exec(domain string, options *ActOpts) error {
 	if domain == "" {
 		return fmt.Errorf("empty domain name")
 	}
@@ -51,7 +51,7 @@ func (e *enum) enumWorker(params ...interface{}) (interface{}, bool) {
 	var err error = nil
 
 	domain := params[0].(string)
-	opts := params[1].(*Options)
+	opts := params[1].(*ActOpts)
 
 	prefix, ok := <-opts.Dict.Data
 	if !ok {

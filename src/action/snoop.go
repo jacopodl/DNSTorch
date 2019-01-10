@@ -22,7 +22,7 @@ func (s *snoop) Description() string {
 	return "Perform a DNS cache snooping"
 }
 
-func (s *snoop) Exec(domain string, options *Options) error {
+func (s *snoop) Exec(domain string, options *ActOpts) error {
 	total := 0
 	count := 0
 
@@ -55,7 +55,7 @@ func (s *snoop) Exec(domain string, options *Options) error {
 	return nil
 }
 
-func (s *snoop) inCacheRD(domain string, options *Options) (bool, *resolver.DtLookup, error) {
+func (s *snoop) inCacheRD(domain string, options *ActOpts) (bool, *resolver.DtLookup, error) {
 	query, err := dns.NewQuery(domain, options.Type, options.Class)
 	if err != nil {
 		return false, nil, err
@@ -67,7 +67,7 @@ func (s *snoop) inCacheRD(domain string, options *Options) (bool, *resolver.DtLo
 	return lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0, lookup, nil
 }
 
-func (s *snoop) snoopAndPrint(name string, options *Options) bool {
+func (s *snoop) snoopAndPrint(name string, options *ActOpts) bool {
 	cached, lookup, err := s.inCacheRD(name, options)
 	if err != nil {
 		dthelper.PrintErr("%s: %s\n", name, err)
