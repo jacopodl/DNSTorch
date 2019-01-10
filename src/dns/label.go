@@ -3,6 +3,7 @@ package dns
 import (
 	"encoding/binary"
 	"fmt"
+	"net"
 	"strings"
 )
 
@@ -84,6 +85,26 @@ func GetNLabel(name string, n int) string {
 		}
 	}
 	return name
+}
+
+func IP2Label(addr net.IP) string {
+	if addr = addr.To4(); addr == nil {
+		return ""
+	}
+	return fmt.Sprintf("%d.%d.%d.%d.%s", addr[3], addr[2], addr[1], addr[0], "in-addr.arpa")
+}
+
+func IP62Label(addr net.IP) string {
+	if addr = addr.To16(); addr == nil {
+		return ""
+	}
+
+	str := ""
+	for i := 15; i >= 0; i-- {
+		str += fmt.Sprintf("%x.%x.", addr[i]&0x0F, (addr[i]&0xF0)>>4)
+	}
+
+	return str + "ip6.arpa"
 }
 
 func Name2Qname(name string) []byte {
