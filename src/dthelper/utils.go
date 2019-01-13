@@ -36,9 +36,9 @@ func ParseTarget(name string) (string, bool) {
 	var addr = net.ParseIP(name)
 	if addr != nil {
 		if addr.To4() != nil {
-			return dns.IP2Label(addr), true
+			return dns.IP2Label(addr, dns.IPDOMAIN), true
 		}
-		return dns.IP62Label(addr), true
+		return dns.IP62Label(addr, dns.IP6DOMAIN), true
 	}
 	return name, false
 }

@@ -113,6 +113,7 @@ func main() {
 	action.Register(action.NewSnoop())
 	action.Register(action.NewEnum())
 	action.Register(action.NewZT())
+	action.Register(action.NewDnsBL())
 
 	flag.Usage = usage
 	flag.Parse()
@@ -150,12 +151,11 @@ func main() {
 	opts.resolv.Flags.ADFlag = opts.gflags.ADFlag
 	opts.resolv.Flags.CDFlag = opts.gflags.CDFlag
 
-	target, isaddr := dthelper.ParseTarget(flag.Arg(0))
-	if isaddr && opts.qtype == dns.TYPE_A {
-		opts.qtype = dns.TYPE_PTR
-	}
-
 	if mode == "" {
+		target, isaddr := dthelper.ParseTarget(flag.Arg(0))
+		if isaddr && opts.qtype == dns.TYPE_A {
+			opts.qtype = dns.TYPE_PTR
+		}
 		resolve(target, &opts)
 		return
 	}
@@ -177,7 +177,7 @@ func main() {
 	if act, err := action.Get(mode); err != nil {
 		onError(err)
 	} else {
-		if err = act.Exec(target, aopts); err != nil {
+		if err = act.Exec(flag.Arg(0), aopts); err != nil {
 			onError(err)
 		}
 	}

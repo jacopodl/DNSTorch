@@ -12,6 +12,8 @@ const (
 	MAXDN      = 253
 	LABELSEP   = '.'
 	SLABELSEP  = "."
+	IPDOMAIN   = "in-addr.arpa"
+	IP6DOMAIN  = "ip6.arpa"
 )
 
 func ConcatLabel(lbl1, lbl2 string) string {
@@ -87,14 +89,14 @@ func GetNLabel(name string, n int) string {
 	return name
 }
 
-func IP2Label(addr net.IP) string {
+func IP2Label(addr net.IP, domain string) string {
 	if addr = addr.To4(); addr == nil {
 		return ""
 	}
-	return fmt.Sprintf("%d.%d.%d.%d.%s", addr[3], addr[2], addr[1], addr[0], "in-addr.arpa")
+	return fmt.Sprintf("%d.%d.%d.%d.%s", addr[3], addr[2], addr[1], addr[0], domain)
 }
 
-func IP62Label(addr net.IP) string {
+func IP62Label(addr net.IP, domain string) string {
 	if addr = addr.To16(); addr == nil {
 		return ""
 	}
@@ -104,7 +106,7 @@ func IP62Label(addr net.IP) string {
 		str += fmt.Sprintf("%x.%x.", addr[i]&0x0F, (addr[i]&0xF0)>>4)
 	}
 
-	return str + "ip6.arpa"
+	return str + domain
 }
 
 func Name2Qname(name string) []byte {
