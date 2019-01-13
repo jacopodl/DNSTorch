@@ -168,8 +168,10 @@ func main() {
 		Resolv:  opts.resolv}
 
 	// Load dict file
-	if aopts.Dict, err = dthelper.NewFDict(dpath, dthelper.DEFAULTQLEN); err != nil {
-		onError(err)
+	if dpath != "" {
+		if aopts.Dict, err = dthelper.NewFDict(dpath, dthelper.DEFAULTQLEN); err != nil {
+			onError(err)
+		}
 	}
 
 	if act, err := action.Get(mode); err != nil {
