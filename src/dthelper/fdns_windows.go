@@ -17,5 +17,12 @@ func DefaultDNS() (net.IP, error) {
 	if v, _, err := key.GetStringValue("DhcpNameServer"); err == nil {
 		return net.ParseIP(strings.Fields(v)[0]), nil
 	}
+
+	if v, _, err := key.GetStringValue("Domain"); err == nil {
+		if ips, err := net.LookupIP(v); err == nil {
+			return ips[0], nil
+		}
+	}
+
 	return nil, fmt.Errorf("nameserver not found")
 }
