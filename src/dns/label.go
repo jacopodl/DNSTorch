@@ -152,7 +152,7 @@ func Qname2Name(buf []byte, ptr *int) string {
 			if current == *ptr {
 				*ptr++
 			}
-			current = int(binary.BigEndian.Uint16(buf[current:current+2])) - 0xC000
+			current = int(binary.BigEndian.Uint16(buf[current:current+2])) - (NAMEPTR << 8)
 			continue
 		}
 		name += string(buf[current+1 : current+sz+1])
@@ -174,7 +174,7 @@ func searchDN(name string, current int, dct map[string]uint16) (int, uint16) {
 		if ptr, ok := dct[name]; ok {
 			return label, ptr
 		}
-		dct[name] = uint16((current + (length - len(name))) | NAMEPTR) // +HDRSIZE is implicit
+		dct[name] = uint16((current + (length - len(name))) | NAMEPTR<<8) // +HDRSIZE is implicit
 		name = TruncLabelLeft(name, 1)
 		label++
 	}
