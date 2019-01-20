@@ -73,6 +73,14 @@ func (r *ResourceRecord) RDStringsList(fieldName bool) []string {
 		switch ref.Field(i).Kind() {
 		case reflect.Uint8, reflect.Uint16, reflect.Uint32:
 			str += fmt.Sprintf("%d", ref.Field(i).Uint())
+		case reflect.Slice:
+			slen := ref.Field(i).Len()
+			for j := slen; j > 0; j-- {
+				str += Type2TName(uint16(ref.Field(i).Index(slen - j).Uint()))
+				if j != 1 {
+					str += " "
+				}
+			}
 		default:
 			str += fmt.Sprintf("%s", ref.Field(i))
 		}
@@ -154,6 +162,8 @@ func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 		r.Rdata = &NAPTR{}
 	case TYPE_DNAME:
 		r.Rdata = &DNAME{}
+	case TYPE_NSEC:
+		r.Rdata = &NSEC{}
 	case TYPE_DHCID:
 		r.Rdata = &DHCID{}
 	default:

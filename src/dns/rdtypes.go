@@ -497,6 +497,88 @@ func (d *DNAME) fromBytes(buf []byte, current int, size int) {
 	d.Dname = Qname2Name(buf, &current)
 }
 
+type NSEC struct {
+	NextDN string
+	BitMap []uint16
+}
+
+func (n *NSEC) toBitMap() []byte {
+	var lwindow uint16 = 0
+	var llength uint16 = 0
+	var off = 0
+	var buf = []byte{0x00, 0x00}
+
+	if len(n.BitMap) == 0 {
+		return nil
+	}
+
+	for _, b := range n.BitMap {
+		window := b / 256
+		length := (b-window*256)/8 + 1
+
+		if window > lwindow && llength != 0 {
+			buf = append(buf, make([]byte, length+2)...)
+			off += int(llength) + 2
+		}
+
+		if length > llength {
+			buf = append(buf, make([]byte, length-llength)...)
+		}
+
+		buf[off] = byte(window)
+		buf[off+1] = byte(length)
+		buf[off+1+int(length)] |= byte(1 << (7 - b%8))
+		lwindow = window
+		llength = length
+	}
+
+	return buf
+}
+
+func (n *NSEC) packRData(current int, cdct map[string]uint16) []byte {
+	return n.toBytes()
+}
+
+func (n *NSEC) toBytes() []byte {
+	return append(Name2Qname(n.NextDN), n.toBitMap()...)
+}
+
+func (n *NSEC) fromBytes(buf []byte, current int, size int) {
+	const mask = 0x80
+	var tlen = current + size
+	var lwindow = -1
+
+	n.NextDN = Qname2Name(buf, &current)
+
+	for current < tlen {
+		window := int(buf[current])
+		length := int(buf[current+1])
+		current += 2
+
+		switch {
+		case window <= lwindow:
+			panic("out of order nsec block")
+		case length == 0:
+			panic("empty nsec block")
+		case length > 32:
+			panic("overflow NSEC block")
+
+		}
+
+		for i := 0; i < length; i++ {
+			b := buf[current+i]
+
+			for j := 0; j < 8; j++ {
+				if b&(mask>>byte(j)) == mask>>byte(j) {
+					n.BitMap = append(n.BitMap, uint16(window*256+i*8+j))
+				}
+			}
+		}
+		current += length
+		lwindow = window
+	}
+}
+
 type DHCID struct {
 	Digest string
 }
