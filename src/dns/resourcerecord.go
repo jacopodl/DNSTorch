@@ -164,6 +164,8 @@ func (r *ResourceRecord) unpack(buf []byte, ptr int) {
 		r.Rdata = &DNAME{}
 	case TYPE_NSEC:
 		r.Rdata = &NSEC{}
+	case TYPE_DNSKEY:
+		r.Rdata = &DNSKEY{}
 	case TYPE_DHCID:
 		r.Rdata = &DHCID{}
 	default:

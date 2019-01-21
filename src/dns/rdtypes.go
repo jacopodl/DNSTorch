@@ -579,6 +579,30 @@ func (n *NSEC) fromBytes(buf []byte, current int, size int) {
 	}
 }
 
+// TODO implements dnskey fromBytes and toBytes
+type DNSKEY struct {
+	Flags     uint16
+	Protocol  uint8
+	Algorithm uint8
+	PKey      string
+}
+
+func (d *DNSKEY) packRData(current int, cdct map[string]uint16) []byte {
+	return d.toBytes()
+}
+
+func (*DNSKEY) toBytes() []byte {
+	panic("implement me")
+}
+
+func (d *DNSKEY) fromBytes(buf []byte, current int, size int) {
+	d.Flags = binary.BigEndian.Uint16(buf[current : current+2])
+	d.Protocol = uint8(buf[current+2])
+	d.Algorithm = uint8(buf[current+3])
+	current += 4
+	d.PKey = "UNSUPPORTED"
+}
+
 type DHCID struct {
 	Digest string
 }
