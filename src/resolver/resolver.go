@@ -14,11 +14,11 @@ type Resolver struct {
 	Ignore   bool
 	Flags    DtQFlags
 	Timeout  time.Duration
-	maxDeleg int
+	MaxDeleg int
 }
 
 func NewResolver(server net.IP, port int, tcp bool) *Resolver {
-	return &Resolver{server: server, port: port, tcp: tcp, Timeout: 3000, maxDeleg: 24}
+	return &Resolver{server: server, port: port, tcp: tcp, Timeout: 3000, MaxDeleg: 24}
 }
 
 func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
@@ -65,7 +65,7 @@ func (r *Resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*Dt
 	var deleg = 0
 	var ridx = 0
 
-	for deleg < r.maxDeleg {
+	for deleg < r.MaxDeleg {
 		srvAddr, _ := getAddr(addresses[ridx])
 		if lookup, err = r.askTo(query, srvAddr, dns.PORT, r.tcp); err != nil {
 			ridx++
@@ -98,7 +98,7 @@ func (r *Resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*Dt
 		ridx = 0
 	}
 
-	return nil, fmt.Errorf("max level of delegation(%d) reached", r.maxDeleg)
+	return nil, fmt.Errorf("max level of delegation(%d) reached", r.MaxDeleg)
 }
 
 func (r *Resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) []*dns.ResourceRecord {

@@ -36,6 +36,7 @@ type Options struct {
 	delay   int
 	timeout int
 	workers int
+	mdeleg  int
 	class   uint16
 	qtype   uint16
 	ns      string
@@ -101,6 +102,7 @@ func main() {
 	flag.BoolVar(&opts.tcp, "tcp", false, "Use TCP protocol to make queries")
 	flag.BoolVar(&opts.trace, "trace", false, "Trace delegation down from root")
 	flag.IntVar(&opts.delay, "delay", 0, "Delay(ms) between two request")
+	flag.IntVar(&opts.mdeleg, "deleg", 24, "Set max level of delegations in trace mode")
 	flag.IntVar(&opts.timeout, "timeout", 800, "Time(ms) to wait for a server to response to a query")
 	flag.IntVar(&opts.workers, "workers", 1, "Set number of active workers")
 	flag.StringVar(&dpath, "dict", "", "Dictionary file of subdomain to use for brute force")
@@ -147,6 +149,7 @@ func main() {
 	opts.resolv = resolver.NewResolver(dnaddr, dnport, opts.tcp)
 	opts.resolv.Ignore = opts.ignore
 	opts.resolv.Timeout = time.Duration(opts.timeout)
+	opts.resolv.MaxDeleg = opts.mdeleg
 	opts.resolv.Flags.AAFlag = opts.gflags.AAFlag
 	opts.resolv.Flags.ADFlag = opts.gflags.ADFlag
 	opts.resolv.Flags.CDFlag = opts.gflags.CDFlag
