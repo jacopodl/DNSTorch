@@ -25,6 +25,17 @@ func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
 	return r.ResolveWith(query, rd, r.tcp, r.server, r.port)
 }
 
+func (r *Resolver) ResolveDomain(domain string, qtype uint16, class uint16) (*DtLookup, error) {
+	var query *dns.Query = nil
+	var err error = nil
+
+	if query, err = dns.NewQuery(domain, qtype, class); err != nil {
+		return nil, err
+	}
+
+	return r.Resolve(query, true)
+}
+
 func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, port int) (*DtLookup, error) {
 	var dtQ = &DtQuery{Query: *query}
 
@@ -219,6 +230,48 @@ func (r *Resolver) getAdditional(rr *dns.ResourceRecord, additional []*dns.Resou
 	}
 
 	return rrs, true
+}
+
+func (r *Resolver) GetDomainAddrs(domain string, class uint16, ip4only bool) ([]net.IP, error) {
+	var lookup *DtLookup = nil
+	var err error = nil
+	var addrs []net.IP = nil
+
+	// get A
+	if lookup, err = r.ResolveDomain(domain, dns.TYPE_A, class); err == nil {
+		if lookup.Msg.Rcode == dns.RCODE_NOERR {
+			for i := range lookup.Msg.Answers {
+				if addr, _ := getAddr(lookup.Msg.Answers[i]); addr != nil {
+					addrs = append(addrs, addr)
+				}
+			}
+		} else {
+			err = fmt.Errorf("type_A: %s", dns.Rcode2Msg(lookup.Msg.Rcode))
+		}
+	}
+
+	// get AAAA
+	if !ip4only {
+		if lookup, err = r.ResolveDomain(domain, dns.TYPE_AAAA, class); err == nil {
+			if lookup.Msg.Rcode == dns.RCODE_NOERR {
+				for i := range lookup.Msg.Answers {
+					if addr, _ := getAddr(lookup.Msg.Answers[i]); addr != nil {
+						addrs = append(addrs, addr)
+					}
+				}
+			} else {
+				err = fmt.Errorf("type_AAAA: %s", dns.Rcode2Msg(lookup.Msg.Rcode))
+			}
+		}
+	}
+
+	if addrs == nil {
+		err = fmt.Errorf("no addresses found")
+	} else {
+		err = nil
+	}
+
+	return addrs, err
 }
 
 func (r *Resolver) GetRootNS() (*DtLookup, error) {
