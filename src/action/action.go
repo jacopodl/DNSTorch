@@ -16,6 +16,7 @@ type ActOpts struct {
 	Delay   time.Duration
 	Dict    *dthelper.FDict
 	Class   uint16
+	Soa     bool
 	Type    uint16
 	Workers int
 	Resolv  *resolver.Resolver

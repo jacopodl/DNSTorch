@@ -238,8 +238,8 @@ func VerifyDN(name string) error {
 	switch {
 	case len(name) == 0:
 		return fmt.Errorf("empty domain name")
-	case len(name)+2 > 253:
-		return fmt.Errorf("domain name exceeds the maximum size of %d bytes", MAXDN)
+		//case len(name)+2 > 253:
+		//	return fmt.Errorf("domain name exceeds the maximum size of %d bytes", MAXDN)
 	}
 
 	for i := range name {

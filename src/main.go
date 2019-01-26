@@ -31,6 +31,7 @@ type Options struct {
 	resolv  *resolver.Resolver
 	gflags  resolver.DtQFlags
 	ignore  bool
+	soa     bool
 	tcp     bool
 	trace   bool
 	delay   int
@@ -99,6 +100,7 @@ func main() {
 	flag.BoolVar(&opts.gflags.CDFlag, "cd", false, "Set checking disabled flag in query")
 	flag.BoolVar(&opts.gflags.RDFlag, "nord", false, "Unset recursion desired flag in query")
 	flag.BoolVar(&opts.ignore, "ignore", false, "Don't revert to TCP for TC responses")
+	flag.BoolVar(&opts.soa, "soa", false, "Use nameserver in target SOA record")
 	flag.BoolVar(&opts.tcp, "tcp", false, "Use TCP protocol to make queries")
 	flag.BoolVar(&opts.trace, "trace", false, "Trace delegation down from root")
 	flag.IntVar(&opts.delay, "delay", 0, "Delay(ms) between two request")
@@ -116,6 +118,7 @@ func main() {
 	action.Register(action.NewEnum())
 	action.Register(action.NewZT())
 	action.Register(action.NewDnsBL())
+	action.Register(action.NewWalk())
 
 	flag.Usage = usage
 	flag.Parse()
@@ -166,6 +169,7 @@ func main() {
 	aopts := &action.ActOpts{
 		Delay:   time.Duration(opts.delay) * time.Millisecond,
 		Class:   opts.class,
+		Soa:     opts.soa,
 		Type:    opts.qtype,
 		Workers: opts.workers,
 		Resolv:  opts.resolv}

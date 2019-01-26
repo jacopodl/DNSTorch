@@ -25,7 +25,7 @@ func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
 	return r.ResolveWith(query, rd, r.tcp, r.server, r.port)
 }
 
-func (r *Resolver) ResolveDomain(domain string, qtype uint16, class uint16) (*DtLookup, error) {
+func (r *Resolver) ResolveDomain(domain string, qtype, class uint16) (*DtLookup, error) {
 	var query *dns.Query = nil
 	var err error = nil
 
@@ -36,6 +36,17 @@ func (r *Resolver) ResolveDomain(domain string, qtype uint16, class uint16) (*Dt
 	return r.Resolve(query, true)
 }
 
+func (r *Resolver) ResolveDomainWith(domain string, qtype, class uint16, server net.IP, port int) (*DtLookup, error) {
+	var query *dns.Query = nil
+	var err error = nil
+
+	if query, err = dns.NewQuery(domain, qtype, class); err != nil {
+		return nil, err
+	}
+
+	return r.ResolveWith(query, true, r.tcp, server, port)
+}
+
 func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, port int) (*DtLookup, error) {
 	var dtQ = &DtQuery{Query: *query}
 
@@ -43,6 +54,11 @@ func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, po
 	dtQ.RDFlag = rd
 	dtQ.ADFlag = r.Flags.ADFlag
 	dtQ.CDFlag = r.Flags.CDFlag
+
+	if server == nil {
+		server = r.server
+		port = r.port
+	}
 
 	return r.askTo(dtQ, server, port, tcp)
 }
