@@ -9,6 +9,10 @@ import (
 
 const RRHDRSIZE = 10
 
+var fmtFunc = map[string]reflect.Value{
+	"Type2TName": reflect.ValueOf(Type2TName),
+	"Algo2Str":   reflect.ValueOf(Algo2Str)}
+
 type RdInterface interface {
 	packRData(current int, cdct map[string]uint16) []byte
 	fromBytes(buf []byte, current int, size int)
@@ -70,23 +74,41 @@ func (r *ResourceRecord) RDStringsList(fieldName bool) []string {
 		if fieldName {
 			str = ref.Type().Field(i).Name + ": "
 		}
-		switch ref.Field(i).Kind() {
-		case reflect.Uint8, reflect.Uint16, reflect.Uint32:
-			str += fmt.Sprintf("%d", ref.Field(i).Uint())
-		case reflect.Slice:
-			slen := ref.Field(i).Len()
-			for j := slen; j > 0; j-- {
-				str += Type2TName(uint16(ref.Field(i).Index(slen - j).Uint()))
-				if j != 1 {
-					str += " "
-				}
-			}
-		default:
-			str += fmt.Sprintf("%s", ref.Field(i))
-		}
+		str += r.rdParseField(ref.Field(i), ref.Type().Field(i))
 		strs = append(strs, str)
 	}
 	return strs
+}
+
+func (r *ResourceRecord) rdParseField(rval reflect.Value, rtype reflect.StructField) string {
+	parseWith := rtype.Tag.Get("parseWith")
+	str := ""
+
+	if parseWith != "" {
+		if rval.Kind() != reflect.Slice {
+			params := []reflect.Value{rval}
+			if f, ok := fmtFunc[parseWith]; ok {
+				return f.Call(params)[0].Interface().(string)
+			}
+		} else {
+			slen := rval.Len()
+			for j := 0; j < slen; j++ {
+				str += r.rdParseField(rval.Index(j), rtype)
+				if j+1 < slen {
+					str += " "
+				}
+			}
+			return str
+		}
+	}
+
+	switch rval.Kind() {
+	case reflect.Uint8, reflect.Uint16, reflect.Uint32:
+		str += fmt.Sprintf("%d", rval.Uint())
+	default:
+		str += fmt.Sprintf("%s", rval)
+	}
+	return str
 }
 
 func (r *ResourceRecord) headerToBytes() []byte {

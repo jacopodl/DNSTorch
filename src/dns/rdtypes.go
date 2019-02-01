@@ -499,7 +499,7 @@ func (d *DNAME) fromBytes(buf []byte, current int, size int) {
 
 type NSEC struct {
 	NextDN string
-	BitMap []uint16
+	BitMap []uint16 `parseWith:"Type2TName"`
 }
 
 func (n *NSEC) toBitMap() []byte {
@@ -583,7 +583,7 @@ func (n *NSEC) fromBytes(buf []byte, current int, size int) {
 type DNSKEY struct {
 	Flags     uint16
 	Protocol  uint8
-	Algorithm uint8
+	Algorithm uint8 `parseWith:"Algo2Str"`
 	PKey      string
 }
 
