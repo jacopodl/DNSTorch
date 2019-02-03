@@ -290,6 +290,24 @@ func (r *Resolver) GetDomainAddrs(domain string, class uint16, ip4only bool) ([]
 	return addrs, err
 }
 
+func (r *Resolver) GetMasterAddr(domain string, class uint16) (net.IP, error) {
+	var addrs []net.IP
+
+	lookup, err := r.ResolveDomain(domain, dns.TYPE_SOA, class)
+	if err == nil {
+		if lookup.Msg.Rcode != dns.RCODE_NOERR {
+			err = fmt.Errorf(dns.Rcode2Msg(lookup.Msg.Rcode))
+		} else {
+			soa := lookup.Msg.Answers[0].Rdata.(*dns.SOA).Mname
+			if addrs, err = r.GetDomainAddrs(soa, class, false); err == nil {
+				return addrs[0], nil
+			}
+		}
+	}
+
+	return nil, err
+}
+
 func (r *Resolver) GetRootNS() (*DtLookup, error) {
 	return r.Resolve(&dns.Query{Name: ".", Type: dns.TYPE_NS, Class: dns.CLASS_IN}, true)
 }

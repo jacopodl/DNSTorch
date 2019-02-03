@@ -100,7 +100,7 @@ func main() {
 	flag.BoolVar(&opts.gflags.CDFlag, "cd", false, "Set checking disabled flag in query")
 	flag.BoolVar(&opts.gflags.RDFlag, "nord", false, "Unset recursion desired flag in query")
 	flag.BoolVar(&opts.ignore, "ignore", false, "Don't revert to TCP for TC responses")
-	flag.BoolVar(&opts.soa, "soa", false, "Use nameserver in target SOA record")
+	flag.BoolVar(&opts.soa, "soa", false, "Use nameserver in target SOA record (mode: walk)")
 	flag.BoolVar(&opts.tcp, "tcp", false, "Use TCP protocol to make queries")
 	flag.BoolVar(&opts.trace, "trace", false, "Trace delegation down from root")
 	flag.IntVar(&opts.delay, "delay", 0, "Delay(ms) between two request")

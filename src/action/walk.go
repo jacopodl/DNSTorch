@@ -34,7 +34,7 @@ func (w *walk) Exec(domain string, options *ActOpts) error {
 
 	if options.Soa {
 		dthelper.PrintInfo("Getting SOA record...\n")
-		if server, err = w.getSOA(domain, options.Class, options.Resolv); err != nil {
+		if server, err = options.Resolv.GetMasterAddr(domain, options.Class); err != nil {
 			dthelper.PrintErr("error while resolving SOA record: %s - reverting to default NS...\n", err)
 		}
 
@@ -70,21 +70,4 @@ func (w *walk) Exec(domain string, options *ActOpts) error {
 
 	dthelper.PrintOk("Found %d domains\n", found)
 	return nil
-}
-
-func (w *walk) getSOA(domain string, class uint16, resolv *resolver.Resolver) (net.IP, error) {
-	var addrs []net.IP = nil
-	lookup, err := resolv.ResolveDomain(domain, dns.TYPE_SOA, class)
-	if err == nil {
-		if lookup.Msg.Rcode != dns.RCODE_NOERR {
-			err = fmt.Errorf(dns.Rcode2Msg(lookup.Msg.Rcode))
-		} else {
-			soa := lookup.Msg.Answers[0].Rdata.(*dns.SOA).Mname
-			if addrs, err = resolv.GetDomainAddrs(soa, class, false); err == nil {
-				return addrs[0], nil
-			}
-		}
-	}
-
-	return nil, err
 }
