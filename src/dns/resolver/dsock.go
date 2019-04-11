@@ -26,16 +26,16 @@ func newDSock(server net.IP, port int, tcp bool, timeout time.Duration) (*dSocke
 	return &dSocket{server, port, tcp, conn, timeout * time.Millisecond}, nil
 }
 
-func (d *dSocket) ask(query *DtQuery) (*DtLookup, error) {
-	var lookup = &DtLookup{Query: query}
+func (d *dSocket) ask(query *Query) (*Response, error) {
+	var lookup = &Response{Query: query}
 	var dPkt = &dns.Dns{}
 	var buf []byte = nil
 	var err error = nil
 
-	dPkt.Authoritative = query.AAFlag
-	dPkt.RecursionDesired = query.RDFlag
-	dPkt.AuthenticatedData = query.ADFlag
-	dPkt.CheckingDisabled = query.CDFlag
+	dPkt.Authoritative = query.AA
+	dPkt.RecursionDesired = query.RD
+	dPkt.AuthenticatedData = query.AD
+	dPkt.CheckingDisabled = query.CD
 	dPkt.AddQuestion(&query.Query)
 
 	buf = prepareBuf(dPkt, d.tcp)
@@ -61,7 +61,7 @@ func (d *dSocket) close() {
 	d.conn.Close()
 }
 
-func (d *dSocket) recvUDP(lookup *DtLookup) error {
+func (d *dSocket) recvUDP(lookup *Response) error {
 	buf := make([]byte, dns.MAXLEN)
 
 	if d.timeout != 0 {
@@ -76,7 +76,7 @@ func (d *dSocket) recvUDP(lookup *DtLookup) error {
 	}
 }
 
-func (d *dSocket) recvTCP(lookup *DtLookup) error {
+func (d *dSocket) recvTCP(lookup *Response) error {
 	buf := []byte{0x00, 0x00}
 	clen := 0
 	tlen := -1

@@ -2,9 +2,9 @@ package action
 
 import (
 	"dns"
+	"dns/resolver"
 	"dthelper"
 	"fmt"
-	"resolver"
 )
 
 type enum struct {
@@ -47,7 +47,7 @@ func (e *enum) Exec(domain string, options *ActOpts) error {
 
 func (e *enum) enumWorker(params ...interface{}) (interface{}, bool) {
 	var query *dns.Query = nil
-	var lookup *resolver.DtLookup = nil
+	var lookup *resolver.Response = nil
 	var err error = nil
 
 	domain := params[0].(string)
@@ -69,7 +69,7 @@ func (e *enum) printResult(data interface{}) {
 	result := data.(dthelper.BgResult)
 	e.total++
 	if !result.IsError {
-		lookup := result.Data.(*resolver.DtLookup)
+		lookup := result.Data.(*resolver.Response)
 		if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
 			resolver.PrintRRs(lookup.Msg.Answers, "!")
 			e.found++

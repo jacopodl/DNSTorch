@@ -2,10 +2,10 @@ package action
 
 import (
 	"dns"
+	"dns/resolver"
 	"dthelper"
 	"fmt"
 	"net"
-	"resolver"
 )
 
 type ztransfer struct{}
@@ -24,7 +24,7 @@ func (z *ztransfer) Description() string {
 
 func (z *ztransfer) Exec(domain string, options *ActOpts) error {
 	var query *dns.Query = nil
-	var lookup *resolver.DtLookup = nil
+	var lookup *resolver.Response = nil
 	var server net.IP = nil
 	var err error = nil
 
@@ -62,7 +62,7 @@ func (z *ztransfer) Exec(domain string, options *ActOpts) error {
 
 func (z *ztransfer) getIpAddr(domain string, resolv *resolver.Resolver) (net.IP, error) {
 	var query *dns.Query = nil
-	var lookup *resolver.DtLookup = nil
+	var lookup *resolver.Response = nil
 	var err error = nil
 
 	types := []uint16{dns.TYPE_A, dns.TYPE_AAAA}
@@ -83,7 +83,7 @@ func (z *ztransfer) getIpAddr(domain string, resolv *resolver.Resolver) (net.IP,
 	return nil, fmt.Errorf("A and AAAA record not found for %s", domain)
 }
 
-func (z *ztransfer) transfer(domain string, class uint16, resolv *resolver.Resolver, server net.IP) (*resolver.DtLookup, bool) {
+func (z *ztransfer) transfer(domain string, class uint16, resolv *resolver.Resolver, server net.IP) (*resolver.Response, bool) {
 	query, _ := dns.NewQuery(domain, dns.TYPE_AXFR, class)
 	lookup, err := resolv.ResolveWith(query, false, true, server, dns.PORT)
 	if err == nil {

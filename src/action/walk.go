@@ -2,10 +2,10 @@ package action
 
 import (
 	"dns"
+	"dns/resolver"
 	"dthelper"
 	"fmt"
 	"net"
-	"resolver"
 	"time"
 )
 
@@ -26,7 +26,7 @@ func (*walk) Description() string {
 func (w *walk) Exec(domain string, options *ActOpts) error {
 	var server net.IP = nil
 	var exists = map[string]bool{}
-	var lookup *resolver.DtLookup = nil
+	var lookup *resolver.Response = nil
 	var err error = nil
 	var found = 0
 

@@ -2,9 +2,9 @@ package action
 
 import (
 	"dns"
+	"dns/resolver"
 	"dthelper"
 	"fmt"
-	"resolver"
 	"time"
 )
 
@@ -55,7 +55,7 @@ func (s *snoop) Exec(domain string, options *ActOpts) error {
 	return nil
 }
 
-func (s *snoop) inCacheRD(domain string, options *ActOpts) (bool, *resolver.DtLookup, error) {
+func (s *snoop) inCacheRD(domain string, options *ActOpts) (bool, *resolver.Response, error) {
 	query, err := dns.NewQuery(domain, options.Type, options.Class)
 	if err != nil {
 		return false, nil, err
@@ -77,7 +77,7 @@ func (s *snoop) snoopAndPrint(name string, options *ActOpts) bool {
 	return cached
 }
 
-func (s *snoop) printResult(cached bool, lookup *resolver.DtLookup) {
+func (s *snoop) printResult(cached bool, lookup *resolver.Response) {
 	if cached {
 		fmt.Printf("\n-- %s\n", lookup.Query.Query.Name)
 		resolver.PrintRRs(lookup.Msg.Answers, "")

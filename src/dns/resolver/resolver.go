@@ -12,7 +12,7 @@ type Resolver struct {
 	port     int
 	tcp      bool
 	Ignore   bool
-	Flags    DtQFlags
+	Flags    Flags
 	Timeout  time.Duration
 	MaxDeleg int
 }
@@ -21,11 +21,11 @@ func NewResolver(server net.IP, port int, tcp bool) *Resolver {
 	return &Resolver{server: server, port: port, tcp: tcp, Timeout: 3000, MaxDeleg: 24}
 }
 
-func (r *Resolver) Resolve(query *dns.Query, rd bool) (*DtLookup, error) {
+func (r *Resolver) Resolve(query *dns.Query, rd bool) (*Response, error) {
 	return r.ResolveWith(query, rd, r.tcp, r.server, r.port)
 }
 
-func (r *Resolver) ResolveDomain(domain string, qtype, class uint16) (*DtLookup, error) {
+func (r *Resolver) ResolveDomain(domain string, qtype, class uint16) (*Response, error) {
 	var query *dns.Query = nil
 	var err error = nil
 
@@ -36,7 +36,7 @@ func (r *Resolver) ResolveDomain(domain string, qtype, class uint16) (*DtLookup,
 	return r.Resolve(query, true)
 }
 
-func (r *Resolver) ResolveDomainWith(domain string, qtype, class uint16, server net.IP, port int) (*DtLookup, error) {
+func (r *Resolver) ResolveDomainWith(domain string, qtype, class uint16, server net.IP, port int) (*Response, error) {
 	var query *dns.Query = nil
 	var err error = nil
 
@@ -47,13 +47,13 @@ func (r *Resolver) ResolveDomainWith(domain string, qtype, class uint16, server 
 	return r.ResolveWith(query, true, r.tcp, server, port)
 }
 
-func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, port int) (*DtLookup, error) {
-	var dtQ = &DtQuery{Query: *query}
+func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, port int) (*Response, error) {
+	var dtQ = &Query{Query: *query}
 
-	dtQ.AAFlag = r.Flags.AAFlag
-	dtQ.RDFlag = rd
-	dtQ.ADFlag = r.Flags.ADFlag
-	dtQ.CDFlag = r.Flags.CDFlag
+	dtQ.AA = r.Flags.AA
+	dtQ.RD = rd
+	dtQ.AD = r.Flags.AD
+	dtQ.CD = r.Flags.CD
 
 	if server == nil {
 		server = r.server
@@ -63,8 +63,8 @@ func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, po
 	return r.askTo(dtQ, server, port, tcp)
 }
 
-func (r *Resolver) Trace(query *dns.Query) (*DtLookup, error) {
-	var dtquery = &DtQuery{Query: *query}
+func (r *Resolver) Trace(query *dns.Query) (*Response, error) {
+	var dtquery = &Query{Query: *query}
 
 	// ask for ROOT
 	addrs, err := r.GetRootAddrs()
@@ -74,8 +74,8 @@ func (r *Resolver) Trace(query *dns.Query) (*DtLookup, error) {
 	return r.iterate(dtquery, addrs)
 }
 
-func (r *Resolver) iterate(query *DtQuery, addresses []*dns.ResourceRecord) (*DtLookup, error) {
-	var lookup *DtLookup = nil
+func (r *Resolver) iterate(query *Query, addresses []*dns.ResourceRecord) (*Response, error) {
+	var lookup *Response = nil
 	var nschain []*dns.ResourceRecord = nil
 	var err error = nil
 	var deleg = 0
@@ -187,7 +187,7 @@ func (r *Resolver) processReferral(targets []*dns.ResourceRecord, msg *dns.Dns) 
 	return resv
 }
 
-func (r *Resolver) askTo(query *DtQuery, server net.IP, port int, tcp bool) (*DtLookup, error) {
+func (r *Resolver) askTo(query *Query, server net.IP, port int, tcp bool) (*Response, error) {
 	sock, err := newDSock(server, port, tcp, r.Timeout)
 	if err != nil {
 		return nil, err
@@ -196,8 +196,8 @@ func (r *Resolver) askTo(query *DtQuery, server net.IP, port int, tcp bool) (*Dt
 	return r.askToSock(query, sock)
 }
 
-func (r *Resolver) askToSock(query *DtQuery, socket *dSocket) (*DtLookup, error) {
-	var lookup *DtLookup = nil
+func (r *Resolver) askToSock(query *Query, socket *dSocket) (*Response, error) {
+	var lookup *Response = nil
 	var err error = nil
 
 	if lookup, err = socket.ask(query); err != nil {
@@ -249,7 +249,7 @@ func (r *Resolver) getAdditional(rr *dns.ResourceRecord, additional []*dns.Resou
 }
 
 func (r *Resolver) GetDomainAddrs(domain string, class uint16, ip4only bool) ([]net.IP, error) {
-	var lookup *DtLookup = nil
+	var lookup *Response = nil
 	var err error = nil
 	var addrs []net.IP = nil
 
@@ -308,7 +308,7 @@ func (r *Resolver) GetMasterAddr(domain string, class uint16) (net.IP, error) {
 	return nil, err
 }
 
-func (r *Resolver) GetRootNS() (*DtLookup, error) {
+func (r *Resolver) GetRootNS() (*Response, error) {
 	return r.Resolve(&dns.Query{Name: ".", Type: dns.TYPE_NS, Class: dns.CLASS_IN}, true)
 }
 

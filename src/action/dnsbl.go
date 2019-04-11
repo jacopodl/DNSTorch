@@ -2,10 +2,10 @@ package action
 
 import (
 	"dns"
+	"dns/resolver"
 	"dthelper"
 	"fmt"
 	"net"
-	"resolver"
 )
 
 type dnsbl struct {
@@ -54,7 +54,7 @@ func (d *dnsbl) Exec(domain string, options *ActOpts) error {
 
 func (d *dnsbl) worker(params ...interface{}) (interface{}, bool) {
 	var query *dns.Query = nil
-	var lookup *resolver.DtLookup = nil
+	var lookup *resolver.Response = nil
 	var qtype = uint16(dns.TYPE_A)
 	var target = ""
 	var err error = nil

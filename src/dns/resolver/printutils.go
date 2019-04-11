@@ -15,15 +15,15 @@ const (
 	GENERIC_INFO_ID       = ";"
 )
 
-func PrintQuery(query *DtQuery) {
+func PrintQuery(query *Query) {
 	fmt.Printf("%s%s Query\n", QUERY_ID, QUERY_ID)
 	fmt.Printf("%s%s Flags: AA: %t RD: %t AD: %t CD: %t\n",
 		QUERY_ID,
 		HEADER_ID,
-		query.AAFlag,
-		query.RDFlag,
-		query.ADFlag,
-		query.CDFlag)
+		query.AA,
+		query.RD,
+		query.AD,
+		query.CD)
 	fmt.Printf("%s %s\t%s\t%d\n",
 		QUERY_ID,
 		query.Query.Name,
@@ -88,7 +88,7 @@ func PrintRRs(records []*dns.ResourceRecord, prefix string) {
 	}
 }
 
-func PrintLookup(lookup *DtLookup) {
+func PrintLookup(lookup *Response) {
 	PrintQuery(lookup.Query)
 	fmt.Println()
 

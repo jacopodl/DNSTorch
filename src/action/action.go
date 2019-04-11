@@ -1,9 +1,9 @@
 package action
 
 import (
+	"dns/resolver"
 	"dthelper"
 	"fmt"
-	"resolver"
 	"strings"
 	"time"
 )

@@ -3,12 +3,12 @@ package main
 import (
 	"action"
 	"dns"
+	"dns/resolver"
 	"dthelper"
 	"flag"
 	"fmt"
 	"net"
 	"os"
-	"resolver"
 	"time"
 )
 
@@ -29,7 +29,7 @@ const (
 
 type Options struct {
 	resolv  *resolver.Resolver
-	gflags  resolver.DtQFlags
+	gflags  resolver.Flags
 	ignore  bool
 	soa     bool
 	tcp     bool
@@ -51,7 +51,7 @@ func onError(err error) {
 
 func resolve(target string, options *Options) {
 	var query *dns.Query = nil
-	var lookup *resolver.DtLookup = nil
+	var lookup *resolver.Response = nil
 	var err error = nil
 
 	if query, err = dns.NewQuery(target, options.qtype, options.class); err != nil {
@@ -59,7 +59,7 @@ func resolve(target string, options *Options) {
 	}
 
 	if !options.trace {
-		lookup, err = options.resolv.Resolve(query, !options.gflags.RDFlag)
+		lookup, err = options.resolv.Resolve(query, !options.gflags.RD)
 	} else {
 		lookup, err = options.resolv.Trace(query)
 	}
@@ -95,10 +95,10 @@ func main() {
 	var stype = ""
 	var err error = nil
 
-	flag.BoolVar(&opts.gflags.AAFlag, "aa", false, "Set AA flag in query")
-	flag.BoolVar(&opts.gflags.ADFlag, "ad", false, "Set AD flag in query")
-	flag.BoolVar(&opts.gflags.CDFlag, "cd", false, "Set checking disabled flag in query")
-	flag.BoolVar(&opts.gflags.RDFlag, "nord", false, "Unset recursion desired flag in query")
+	flag.BoolVar(&opts.gflags.AA, "aa", false, "Set AA flag in query")
+	flag.BoolVar(&opts.gflags.AD, "ad", false, "Set AD flag in query")
+	flag.BoolVar(&opts.gflags.CD, "cd", false, "Set checking disabled flag in query")
+	flag.BoolVar(&opts.gflags.RD, "nord", false, "Unset recursion desired flag in query")
 	flag.BoolVar(&opts.ignore, "ignore", false, "Don't revert to TCP for TC responses")
 	flag.BoolVar(&opts.soa, "soa", false, "Use nameserver in target SOA record (mode: walk)")
 	flag.BoolVar(&opts.tcp, "tcp", false, "Use TCP protocol to make queries")
@@ -153,9 +153,9 @@ func main() {
 	opts.resolv.Ignore = opts.ignore
 	opts.resolv.Timeout = time.Duration(opts.timeout)
 	opts.resolv.MaxDeleg = opts.mdeleg
-	opts.resolv.Flags.AAFlag = opts.gflags.AAFlag
-	opts.resolv.Flags.ADFlag = opts.gflags.ADFlag
-	opts.resolv.Flags.CDFlag = opts.gflags.CDFlag
+	opts.resolv.Flags.AA = opts.gflags.AA
+	opts.resolv.Flags.AD = opts.gflags.AD
+	opts.resolv.Flags.CD = opts.gflags.CD
 
 	if mode == "" {
 		target, isaddr := dthelper.ParseTarget(flag.Arg(0))
