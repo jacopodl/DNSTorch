@@ -7,36 +7,36 @@ import (
 )
 
 const (
-	HEADER_ID             = "$"
-	QUERY_ID              = "?"
-	ANSWER_ID             = "!"
-	ANSWER_AUTHSECTION_ID = "@"
-	ANSWER_ADDSECTION_ID  = "+"
-	GENERIC_INFO_ID       = ";"
+	HeaderId            = "$"
+	QueryId             = "?"
+	AnswerId            = "!"
+	AnswerAuthSectionId = "@"
+	AnswerAddSectionId  = "+"
+	GenericInfoId       = ";"
 )
 
 func PrintQuery(query *Query) {
-	fmt.Printf("%s%s Query\n", QUERY_ID, QUERY_ID)
+	fmt.Printf("%s%s Query\n", QueryId, QueryId)
 	fmt.Printf("%s%s Flags: AA: %t RD: %t AD: %t CD: %t\n",
-		QUERY_ID,
-		HEADER_ID,
+		QueryId,
+		HeaderId,
 		query.AA,
 		query.RD,
 		query.AD,
 		query.CD)
 	fmt.Printf("%s %s\t%s\t%d\n",
-		QUERY_ID,
+		QueryId,
 		query.Query.Name,
 		dns.Type2TName(query.Query.Type),
 		query.Query.Class)
 }
 
 func PrintAnswer(msg *dns.Dns) {
-	fmt.Printf("%s%s Answer\n", ANSWER_ID, ANSWER_ID)
-	fmt.Printf("%s%s ID: %d\n", ANSWER_ID, HEADER_ID, msg.Identification)
+	fmt.Printf("%s%s Answer\n", AnswerId, AnswerId)
+	fmt.Printf("%s%s ID: %d\n", AnswerId, HeaderId, msg.Identification)
 	fmt.Printf("%s%s Flags: AA: %t TC: %t RD: %t RA: %t Z: %t AD: %t CD: %t\n",
-		ANSWER_ID,
-		HEADER_ID,
+		AnswerId,
+		HeaderId,
 		msg.Authoritative,
 		msg.Truncated,
 		msg.RecursionDesired,
@@ -44,19 +44,19 @@ func PrintAnswer(msg *dns.Dns) {
 		msg.Zero,
 		msg.AuthenticatedData,
 		msg.CheckingDisabled)
-	fmt.Printf("%s%s Rcode: %d (%s)\n", ANSWER_ID, HEADER_ID, msg.Rcode, dns.Rcode2Msg(msg.Rcode))
+	fmt.Printf("%s%s Rcode: %d (%s)\n", AnswerId, HeaderId, msg.Rcode, dns.Rcode2Msg(msg.Rcode))
 
 	if len(msg.Answers) > 0 {
-		fmt.Printf("\n%s%s Answers (%d)\n", ANSWER_ID, HEADER_ID, len(msg.Answers))
-		PrintRRs(msg.Answers, ANSWER_ID)
+		fmt.Printf("\n%s%s Answers (%d)\n", AnswerId, HeaderId, len(msg.Answers))
+		PrintRRs(msg.Answers, AnswerId)
 	}
 	if len(msg.Authority) > 0 {
-		fmt.Printf("\n%s%s Authority (%d)\n", ANSWER_ID, HEADER_ID, len(msg.Authority))
-		PrintRRs(msg.Authority, ANSWER_ID+ANSWER_AUTHSECTION_ID)
+		fmt.Printf("\n%s%s Authority (%d)\n", AnswerId, HeaderId, len(msg.Authority))
+		PrintRRs(msg.Authority, AnswerId+AnswerAuthSectionId)
 	}
 	if len(msg.Additional) > 0 {
-		fmt.Printf("\n%s%s Additional (%d)\n", ANSWER_ID, HEADER_ID, len(msg.Additional))
-		PrintRRs(msg.Additional, ANSWER_ID+ANSWER_ADDSECTION_ID)
+		fmt.Printf("\n%s%s Additional (%d)\n", AnswerId, HeaderId, len(msg.Additional))
+		PrintRRs(msg.Additional, AnswerId+AnswerAddSectionId)
 	}
 }
 
@@ -88,15 +88,15 @@ func PrintRRs(records []*dns.ResourceRecord, prefix string) {
 	}
 }
 
-func PrintLookup(lookup *Response) {
-	PrintQuery(lookup.Query)
+func PrintLookup(response *Response) {
+	PrintQuery(response.Query)
 	fmt.Println()
 
-	PrintAnswer(lookup.Msg)
+	PrintAnswer(response.Msg)
 	fmt.Println()
 
-	if len(lookup.NsChain) > 0 {
-		fmt.Printf("%s%s NSChain\n", GENERIC_INFO_ID, GENERIC_INFO_ID)
-		PrintRRs(lookup.NsChain, GENERIC_INFO_ID)
+	if len(response.NsChain) > 0 {
+		fmt.Printf("%s%s NSChain\n", GenericInfoId, GenericInfoId)
+		PrintRRs(response.NsChain, GenericInfoId)
 	}
 }
