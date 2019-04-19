@@ -34,7 +34,7 @@ func (w *walk) Exec(domain string, options *ActOpts) error {
 
 	if options.Soa {
 		dthelper.PrintInfo("Getting SOA record...\n")
-		if server, err = options.Resolv.GetMasterAddr(domain, options.Class); err != nil {
+		if server, err = options.Resolv.GetSoaAddr(domain, options.Class); err != nil {
 			dthelper.PrintErr("error while resolving SOA record: %s - reverting to default NS...\n", err)
 		}
 
@@ -62,7 +62,7 @@ func (w *walk) Exec(domain string, options *ActOpts) error {
 		exists[domain] = true
 		found++
 
-		resolver.PrintRRs(lookup.Msg.Answers, resolver.ANSWER_ID)
+		resolver.PrintRRs(lookup.Msg.Answers, resolver.AnswerId)
 		if options.Delay != 0 {
 			time.Sleep(options.Delay)
 		}

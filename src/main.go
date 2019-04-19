@@ -152,7 +152,7 @@ func main() {
 	opts.resolv = resolver.NewResolver(dnaddr, dnport, opts.tcp)
 	opts.resolv.Ignore = opts.ignore
 	opts.resolv.Timeout = time.Duration(opts.timeout)
-	opts.resolv.MaxDeleg = opts.mdeleg
+	opts.resolv.MaxDelegations = opts.mdeleg
 	opts.resolv.Flags.AA = opts.gflags.AA
 	opts.resolv.Flags.AD = opts.gflags.AD
 	opts.resolv.Flags.CD = opts.gflags.CD
