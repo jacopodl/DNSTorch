@@ -72,15 +72,16 @@ func resolve(target string, options *Options) {
 }
 
 func usage() {
-	fmt.Fprintf(os.Stderr, LOGO)
-	fmt.Fprintf(os.Stderr, " V: %s\n\n", VERSION)
-	fmt.Fprintf(os.Stderr, "usage: dnstorch [options] [domain]\n\n")
-	fmt.Fprintf(os.Stderr, "optional arguments:\n")
+	_, _ = fmt.Fprintf(os.Stderr, LOGO)
+	_, _ = fmt.Fprintf(os.Stderr, " V: %s\n\n", VERSION)
+	_, _ = fmt.Fprintf(os.Stderr, "usage: dnstorch [options] <domain>\n\n")
+	_, _ = fmt.Fprintf(os.Stderr, "optional arguments:\n")
+
 	flag.PrintDefaults()
 
-	fmt.Fprintf(os.Stderr, "\nModes:\n\n")
+	_, _ = fmt.Fprintf(os.Stderr, "\nModes:\n\n")
 	for key, mod := range action.Actions {
-		fmt.Fprintf(os.Stderr, "%s\n\t%s\n", key, mod.Description())
+		_, _ = fmt.Fprintf(os.Stderr, "%s\n\t%s\n", key, mod.Description())
 	}
 }
 
@@ -91,6 +92,7 @@ func main() {
 	var dpath = ""
 	var mode = ""
 	var ns = ""
+	var nsl = ""
 	var sclass = ""
 	var stype = ""
 	var err error = nil
@@ -110,22 +112,23 @@ func main() {
 	flag.StringVar(&dpath, "dict", "", "Dictionary file of subdomain to use for brute force")
 	flag.StringVar(&mode, "mode", "", "Set operation mode")
 	flag.StringVar(&ns, "ns", "", "Domain server to use.")
+	flag.StringVar(&nsl, "list", "", "List of domain servers to use")
 	flag.StringVar(&sclass, "class", "IN", "Specify query class [IN, CH, HS, NONE, ANY]")
 	flag.StringVar(&stype, "type", "A", "Specify query type")
 
 	// Register operation modes
-	action.Register(action.NewSnoop())
-	action.Register(action.NewEnum())
-	action.Register(action.NewZT())
-	action.Register(action.NewDnsBL())
-	action.Register(action.NewWalk())
+	_ = action.Register(action.NewSnoop())
+	_ = action.Register(action.NewEnum())
+	_ = action.Register(action.NewZT())
+	_ = action.Register(action.NewDnsBL())
+	_ = action.Register(action.NewWalk())
 
 	flag.Usage = usage
 	flag.Parse()
 
 	// Default DNS server
 	if ns != "" {
-		if dnaddr, dnport, err = dthelper.ParseDNSAddr(ns); err != nil {
+		if dnaddr, dnport, err = dthelper.ParseAddr(ns); err != nil {
 			onError(err)
 		}
 	} else {
@@ -156,6 +159,13 @@ func main() {
 	opts.resolv.Flags.AA = opts.gflags.AA
 	opts.resolv.Flags.AD = opts.gflags.AD
 	opts.resolv.Flags.CD = opts.gflags.CD
+
+	// Load NS list (If passed)
+	if nsl != "" {
+		if err = dthelper.ParseNSList(nsl, opts.resolv); err != nil {
+			onError(err)
+		}
+	}
 
 	if mode == "" {
 		target, isaddr := dthelper.ParseTarget(flag.Arg(0))
