@@ -6,23 +6,23 @@ import (
 )
 
 const (
-	ERRMSG  = "[X]"
-	INFOMSG = "[!]"
-	OKMSG   = "[+]"
+	errMsg  = "[X]"
+	infoMsg = "[!]"
+	okMsg   = "[+]"
 )
 
 func PrintStatusMsg(file *os.File, mtype, format string, params ...interface{}) {
-	fmt.Fprintf(file, "%s %s", mtype, fmt.Sprintf(format, params...))
+	_, _ = fmt.Fprintf(file, "%s %s", mtype, fmt.Sprintf(format, params...))
 }
 
 func PrintErr(format string, params ...interface{}) {
-	PrintStatusMsg(os.Stderr, ERRMSG, format, params...)
+	PrintStatusMsg(os.Stderr, errMsg, format, params...)
 }
 
 func PrintInfo(format string, params ...interface{}) {
-	PrintStatusMsg(os.Stdout, INFOMSG, format, params...)
+	PrintStatusMsg(os.Stdout, infoMsg, format, params...)
 }
 
 func PrintOk(format string, params ...interface{}) {
-	PrintStatusMsg(os.Stdout, OKMSG, format, params...)
+	PrintStatusMsg(os.Stdout, okMsg, format, params...)
 }

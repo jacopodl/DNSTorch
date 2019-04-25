@@ -35,16 +35,15 @@ type Resolver struct {
 	servers []*nsEntry
 	srvLck  sync.Mutex
 
-	tcp            bool
+	Tcp            bool
 	Ignore         bool
 	Flags          Flags
 	Timeout        time.Duration
 	MaxDelegations int
 }
 
-func NewResolver(server net.IP, port int, tcp bool) *Resolver {
-	res := &Resolver{tcp: tcp, Timeout: 3000, MaxDelegations: 24}
-	res.AddNS(server, port)
+func NewResolver() *Resolver {
+	res := &Resolver{Timeout: 3000, MaxDelegations: 24}
 	return res
 }
 
@@ -93,7 +92,7 @@ func (r *Resolver) GetDomainAddrs(domain string, class uint16, ip4only bool) ([]
 	if lookup, err = r.ResolveDomain(domain, dns.TYPE_A, class); err == nil {
 		if lookup.Msg.Rcode == dns.RCODE_NOERR {
 			for i := range lookup.Msg.Answers {
-				if addr := rr2addr(lookup.Msg.Answers[i]); addr != nil {
+				if addr := Rr2Addr(lookup.Msg.Answers[i]); addr != nil {
 					addrs = append(addrs, addr)
 				}
 			}
@@ -107,7 +106,7 @@ func (r *Resolver) GetDomainAddrs(domain string, class uint16, ip4only bool) ([]
 		if lookup, err = r.ResolveDomain(domain, dns.TYPE_AAAA, class); err == nil {
 			if lookup.Msg.Rcode == dns.RCODE_NOERR {
 				for i := range lookup.Msg.Answers {
-					if addr := rr2addr(lookup.Msg.Answers[i]); addr != nil {
+					if addr := Rr2Addr(lookup.Msg.Answers[i]); addr != nil {
 						addrs = append(addrs, addr)
 					}
 				}
@@ -165,39 +164,6 @@ func (r *Resolver) GetSoaAddr(domain string, class uint16) (net.IP, error) {
 	return nil, err
 }
 
-func (r *Resolver) traceWk(tc *traceContext) {
-	defer tc.wg.Done()
-
-	for !tc.stop {
-		tc.iCond.L.Lock()
-		for len(tc.in) == 0 {
-			if tc.stop {
-				tc.iCond.L.Unlock()
-				return
-			}
-			tc.iCond.Wait()
-		}
-		tc.oCond.L.Lock()
-		if len(tc.out) > maxQueueSize || tc.stop {
-			tc.oCond.L.Unlock()
-			tc.iCond.L.Unlock()
-			continue
-		}
-
-		if lookup, err := r.Resolve(tc.in[0], true); err == nil {
-			if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
-				tc.out = append(tc.out, lookup.Msg.Answers[0])
-			}
-		}
-
-		tc.in = tc.in[1:]
-
-		tc.iCond.L.Unlock()
-		tc.oCond.L.Unlock()
-		tc.oCond.Signal()
-	}
-}
-
 func (r *Resolver) pickNS() *nsEntry {
 	var ns *nsEntry = nil
 	var idx = 0
@@ -250,7 +216,7 @@ func (r *Resolver) processReferral(tc *traceContext, msg *dns.Dns, useAuth bool)
 }
 
 func (r *Resolver) Resolve(query *dns.Query, rd bool) (*Response, error) {
-	return r.ResolveWith(query, rd, r.tcp, nil, 0)
+	return r.ResolveWith(query, rd, r.Tcp, nil, 0)
 }
 
 func (r *Resolver) ResolveDomain(domain string, qtype, class uint16) (*Response, error) {
@@ -272,7 +238,7 @@ func (r *Resolver) ResolveDomainWith(domain string, qtype, class uint16, server 
 		return nil, err
 	}
 
-	return r.ResolveWith(query, true, r.tcp, server, port)
+	return r.ResolveWith(query, true, r.Tcp, server, port)
 }
 
 func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, port int) (*Response, error) {
@@ -299,6 +265,12 @@ func (r *Resolver) ResolveWith(query *dns.Query, rd, tcp bool, server net.IP, po
 	}
 
 	return r.askTo(dtQ, server, port, tcp)
+}
+
+func (r *Resolver) SetFlags(flags *Flags) {
+	r.Flags.AA = flags.AA
+	r.Flags.AD = flags.AD
+	r.Flags.CD = flags.CD
 }
 
 func (r *Resolver) Trace(query *dns.Query) (*Response, error) {
@@ -330,6 +302,39 @@ func (r *Resolver) TraceDomain(domain string, qtype, class uint16) (*Response, e
 	return r.Trace(query)
 }
 
+func (r *Resolver) traceWk(tc *traceContext) {
+	defer tc.wg.Done()
+
+	for !tc.stop {
+		tc.iCond.L.Lock()
+		for len(tc.in) == 0 {
+			if tc.stop {
+				tc.iCond.L.Unlock()
+				return
+			}
+			tc.iCond.Wait()
+		}
+		tc.oCond.L.Lock()
+		if len(tc.out) > maxQueueSize || tc.stop {
+			tc.oCond.L.Unlock()
+			tc.iCond.L.Unlock()
+			continue
+		}
+
+		if lookup, err := r.Resolve(tc.in[0], true); err == nil {
+			if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
+				tc.out = append(tc.out, lookup.Msg.Answers[0])
+			}
+		}
+
+		tc.in = tc.in[1:]
+
+		tc.iCond.L.Unlock()
+		tc.oCond.L.Unlock()
+		tc.oCond.Signal()
+	}
+}
+
 func (r *Resolver) trace(tc *traceContext, query *Query) (*Response, error) {
 	var nsChain []*dns.ResourceRecord = nil
 	var srv *dns.ResourceRecord = nil
@@ -347,7 +352,7 @@ func (r *Resolver) trace(tc *traceContext, query *Query) (*Response, error) {
 		if srv = r.getNextSrv(tc); err != nil {
 			return nil, fmt.Errorf("no response from the DNS servers")
 		}
-		if lookup, err = r.askTo(query, rr2addr(srv), dns.PORT, r.tcp); err != nil {
+		if lookup, err = r.askTo(query, Rr2Addr(srv), dns.PORT, r.Tcp); err != nil {
 			continue
 		}
 
@@ -369,6 +374,14 @@ func (r *Resolver) trace(tc *traceContext, query *Query) (*Response, error) {
 		delegations++
 	}
 	return nil, fmt.Errorf("max level of delegation(%d) reached", r.MaxDelegations)
+}
+
+func (r *Resolver) Transfer(domain string, class uint16, server net.IP, port int) (*Response, error) {
+	query, err := dns.NewQuery(domain, dns.TYPE_AXFR, class)
+	if err != nil {
+		return nil, err
+	}
+	return r.ResolveWith(query, false, true, server, port)
 }
 
 func parseAdditional(rr *dns.ResourceRecord, addSection []*dns.ResourceRecord) ([]*dns.ResourceRecord, bool) {
@@ -400,7 +413,7 @@ func parseAdditional(rr *dns.ResourceRecord, addSection []*dns.ResourceRecord) (
 	return rrs, true
 }
 
-func rr2addr(record *dns.ResourceRecord) net.IP {
+func Rr2Addr(record *dns.ResourceRecord) net.IP {
 	switch {
 	case record.Qtype == dns.TYPE_A:
 		return record.Rdata.(*dns.A).Address

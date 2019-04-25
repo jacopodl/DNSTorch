@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const DEFAULTQLEN = 10
+const DefaultQLen = 10
 
 type FDict struct {
 	file   *os.File
