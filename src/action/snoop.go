@@ -26,28 +26,26 @@ func (s *snoop) Exec(domain string, options *ActOpts) error {
 	total := 0
 	count := 0
 
-	dthelper.PrintInfo("Performing cache snooping...\n")
+	dthelper.PrintInfo("Performing cache snooping...\n\n")
 
 	if options.Dict == nil {
 		if domain == "" {
-			return fmt.Errorf("empty domain name")
+			return fmt.Errorf("%s or dictionary file", errMissingDN)
 		}
 		total = 1
 		if s.snoopAndPrint(domain, options) {
 			count++
 		}
 	} else {
-		for dname := range options.Dict.Data {
+		for dn := range options.Dict.Data {
 			total++
-			if s.snoopAndPrint(dname, options) {
+			if s.snoopAndPrint(dn, options) {
 				count++
 			}
-			if options.Delay > 0 {
-				time.Sleep(options.Delay)
-			}
+			time.Sleep(options.Delay)
 		}
 		if total == 0 {
-			return fmt.Errorf("empty domains list")
+			return fmt.Errorf(errEmptyDict)
 		}
 	}
 	fmt.Println()
@@ -70,7 +68,7 @@ func (s *snoop) inCacheRD(domain string, options *ActOpts) (bool, *resolver.Resp
 func (s *snoop) snoopAndPrint(name string, options *ActOpts) bool {
 	cached, lookup, err := s.inCacheRD(name, options)
 	if err != nil {
-		dthelper.PrintErr("%s: %s\n", name, err)
+		dthelper.PrintErr("%s(%s)\n", err, name)
 		return false
 	}
 	s.printResult(cached, lookup)
@@ -79,10 +77,9 @@ func (s *snoop) snoopAndPrint(name string, options *ActOpts) bool {
 
 func (s *snoop) printResult(cached bool, lookup *resolver.Response) {
 	if cached {
-		fmt.Printf("\n-- %s\n", lookup.Query.Query.Name)
-		resolver.PrintRRs(lookup.Msg.Answers, "")
+		resolver.PrintRRs(lookup.Msg.Answers, resolver.AnswerId)
 	}
 	if lookup.Msg.Rcode != dns.RCODE_NOERR {
-		fmt.Printf("\n-- %s: %s\n", lookup.Query.Query.Name, dns.Rcode2Msg(lookup.Msg.Rcode))
+		dthelper.PrintErr("%s(%s)\n", dns.Rcode2Msg(lookup.Msg.Rcode), lookup.Query.Query.Name)
 	}
 }

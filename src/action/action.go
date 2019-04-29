@@ -8,7 +8,12 @@ import (
 	"time"
 )
 
-const OPTSEP = "#"
+const (
+	optSep       = "#"
+	errMissingDN = "missing domain name"
+	errReqDict   = "dictionary file is required"
+	errEmptyDict = "dictionary file is empty"
+)
 
 var Actions = map[string]Action{}
 
@@ -44,7 +49,7 @@ func Register(action Action) error {
 }
 
 func splitActionOptions(hopts string) (mname, soptions string) {
-	split := strings.SplitN(hopts, OPTSEP, 2)
+	split := strings.SplitN(hopts, optSep, 2)
 	mname = split[0]
 	if len(split) > 1 {
 		soptions = split[1]

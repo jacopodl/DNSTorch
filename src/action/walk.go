@@ -20,7 +20,7 @@ func (*walk) Name() string {
 }
 
 func (*walk) Description() string {
-	return "Perform DNS NSEC walking"
+	return "Perform NSEC record walking"
 }
 
 func (w *walk) Exec(domain string, options *ActOpts) error {
@@ -37,7 +37,6 @@ func (w *walk) Exec(domain string, options *ActOpts) error {
 		if server, err = options.Resolv.GetSoaAddr(domain, options.Class); err != nil {
 			dthelper.PrintErr("error while resolving SOA record: %s - reverting to default NS...\n", err)
 		}
-
 	}
 
 	for {
@@ -63,9 +62,7 @@ func (w *walk) Exec(domain string, options *ActOpts) error {
 		found++
 
 		resolver.PrintRRs(lookup.Msg.Answers, resolver.AnswerId)
-		if options.Delay != 0 {
-			time.Sleep(options.Delay)
-		}
+		time.Sleep(options.Delay)
 	}
 
 	dthelper.PrintOk("Found %d domains\n", found)

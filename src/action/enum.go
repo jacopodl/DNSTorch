@@ -21,16 +21,16 @@ func (e *enum) Name() string {
 }
 
 func (e *enum) Description() string {
-	return "Perform brute force subdomain enumeration"
+	return "Perform subdomain enumeration"
 }
 
 func (e *enum) Exec(domain string, options *ActOpts) error {
 	if domain == "" {
-		return fmt.Errorf("empty domain name")
+		return fmt.Errorf(errMissingDN)
 	}
 
 	if options.Dict == nil {
-		return fmt.Errorf("enum requires a dictionary file")
+		return fmt.Errorf(errReqDict)
 	}
 
 	dthelper.PrintInfo("Performing enumeration on target %s...\n\n", domain)
@@ -46,23 +46,19 @@ func (e *enum) Exec(domain string, options *ActOpts) error {
 }
 
 func (e *enum) enumWorker(params ...interface{}) (interface{}, bool) {
-	var query *dns.Query = nil
-	var lookup *resolver.Response = nil
+	var response *resolver.Response = nil
 	var err error = nil
 
 	domain := params[0].(string)
 	opts := params[1].(*ActOpts)
 
-	prefix, ok := <-opts.Dict.Data
-	if !ok {
-		return nil, true
-	}
-	if query, err = dns.NewQuery(dns.ConcatLabel(prefix, domain), opts.Type, opts.Class); err == nil {
-		if lookup, err = opts.Resolv.Resolve(query, true); err == nil {
-			return dthelper.BgResult{Data: lookup}, false
+	if prefix, ok := <-opts.Dict.Data; ok {
+		if response, err = opts.Resolv.ResolveDomain(dns.ConcatLabel(prefix, domain), opts.Type, opts.Class); err == nil {
+			return dthelper.BgResult{Data: response}, false
 		}
+		return dthelper.BgResult{Data: err, IsError: true}, false
 	}
-	return dthelper.BgResult{Data: err, IsError: true}, false
+	return nil, true
 }
 
 func (e *enum) printResult(data interface{}) {
@@ -71,7 +67,7 @@ func (e *enum) printResult(data interface{}) {
 	if !result.IsError {
 		lookup := result.Data.(*resolver.Response)
 		if lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
-			resolver.PrintRRs(lookup.Msg.Answers, "!")
+			resolver.PrintRRs(lookup.Msg.Answers, resolver.AnswerId)
 			e.found++
 		}
 		return

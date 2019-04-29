@@ -40,7 +40,7 @@ func (d *dnsbl) Exec(domain string, options *ActOpts) error {
 	}
 
 	if options.Dict == nil {
-		return fmt.Errorf("dnsbl requires a dictionary file")
+		return fmt.Errorf(errReqDict)
 	}
 
 	w := dthelper.NewWorkers(options.Delay, d.worker, d.printResult)
@@ -53,7 +53,7 @@ func (d *dnsbl) Exec(domain string, options *ActOpts) error {
 }
 
 func (d *dnsbl) worker(params ...interface{}) (interface{}, bool) {
-	var query *dns.Query = nil
+	//var query *dns.Query = nil
 	var lookup *resolver.Response = nil
 	var qtype = uint16(dns.TYPE_A)
 	var target = ""
@@ -75,15 +75,12 @@ func (d *dnsbl) worker(params ...interface{}) (interface{}, bool) {
 	}
 
 	ret := &blResult{target: tip.String(), blkns: bl}
-	if query, err = dns.NewQuery(dns.ConcatLabel(target, bl), qtype, opts.Class); err == nil {
-		if lookup, err = opts.Resolv.Resolve(query, true); err == nil {
-			if lookup.Msg.Rcode == dns.RCODE_NOERR {
-				ret.found = true
-				query, _ = dns.NewQuery(dns.ConcatLabel(target, bl), dns.TYPE_TXT, opts.Class)
-				txtlck, err := opts.Resolv.Resolve(query, true)
-				if err == nil && txtlck.Msg.Rcode == dns.RCODE_NOERR && len(txtlck.Msg.Answers) > 0 {
-					ret.info = txtlck.Msg.Answers[0].Rdata.(*dns.TXT).Txt
-				}
+	if lookup, err = opts.Resolv.ResolveDomain(dns.ConcatLabel(target, bl), qtype, opts.Class); err == nil {
+		if lookup.Msg.Rcode == dns.RCODE_NOERR {
+			ret.found = true
+			lookup, err = opts.Resolv.ResolveDomain(dns.ConcatLabel(target, bl), dns.TYPE_TXT, opts.Class)
+			if err == nil && lookup.Msg.Rcode == dns.RCODE_NOERR && len(lookup.Msg.Answers) > 0 {
+				ret.info = lookup.Msg.Answers[0].Rdata.(*dns.TXT).Txt
 			}
 		}
 	}
@@ -101,5 +98,5 @@ func (d *dnsbl) printResult(data interface{}) {
 		}
 		return
 	}
-	dthelper.PrintErr("%s error: %s\n", result.blkns, result.err.Error())
+	dthelper.PrintErr("%s(%s)\n", result.err.Error(), result.blkns)
 }
