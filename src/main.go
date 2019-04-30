@@ -195,7 +195,7 @@ func main() {
 		if err = act.Exec(flag.Arg(0), aopts); err != nil {
 			onError(err)
 		}
-		dthelper.PrintInfo("Time elapsed: %s", time.Since(start).String())
+		dthelper.PrintInfo("Time elapsed: %s\n", time.Since(start).String())
 	}
 	return
 }
