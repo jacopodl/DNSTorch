@@ -1,6 +1,7 @@
 ![](https://img.shields.io/badge/Language-Go-orange.svg)
 ![](https://img.shields.io/badge/version-1.0.0-green.svg)
 [![GPLv3 License](https://img.shields.io/badge/License-GPLv3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0.html)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=jacopodl_DNSTorch&metric=alert_status)](https://sonarcloud.io/dashboard?id=jacopodl_DNSTorch)
 
 # DNSTorch
 DNSTorch is an experimental tool that in standard use is similar to the dig command, but unlike it, it includes several ways to perform more in-depth analysis.
