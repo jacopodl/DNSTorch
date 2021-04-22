@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// TODO: how do I get UDP/TCP packet timestamp in Go?
+// how do I get UDP/TCP packet timestamp in Go?
 // There is a way? :(
 
 type dSocket struct {
