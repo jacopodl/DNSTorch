@@ -19,19 +19,45 @@ First, getting the code from repository and compile it with following command:
 or run (certainly faster to type 🚀):
     
     $ make
-    
+
+# Usage examples
+
+	$ dnstorch www.google.com
+	
+	?? Query
+	?$ Flags: AA: false RD: true AD: false CD: false
+	? www.google.com	A	1
+
+	!! Answer
+	!$ ID: 0
+	!$ Flags: AA: false TC: false RD: true RA: true Z: false AD: false CD: false
+	!$ Rcode: 0 (request completed successfully)
+
+	!$ Answers (1)
+	! www.google.com	A	1	140	142.250.184.100
+	
+	$ dnstorch -mode walk iana.org
+	
+	[!] Testing iana.org for zone walking...
+	! iana.org	NSEC	1	3599	api.iana.org A NS SOA MX TXT AAAA RRSIG NSEC DNSKEY
+	.
+	.
+	! whois.iana.org	NSEC	1	3599	www.iana.org CNAME RRSIG NSEC
+	! www.iana.org		NSEC	1	3599	iana.org CNAME RRSIG NSEC
+	[+] Found 60 domains
+	
 # Supported modes 🔧
 
 * dnsbl:
-  - Search into multiple DNS-based blackhole list
+	- Search into multiple DNS-based blackhole list
 * walk
 	- Perform DNS NSEC walking
 * snoop
-  - Perform a DNS cache snooping
+	- Perform a DNS cache snooping
 * enum
-  - Perform brute force subdomain enumeration
+	- Perform brute force subdomain enumeration
 * zt
-  - Perform DNS zone transfer
+	- Perform DNS zone transfer
 
 
 # Contribute
