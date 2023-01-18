@@ -13,8 +13,6 @@ DNSTorch is an experimental tool that in standard use is similar to the dig comm
 First, getting the code from repository and compile it with following command:
 
     $ cd dnstorch
-    $ export GO111MODULE=off
-    $ export GOPATH=$(shell pwd)
     $ go build -o bin/dnstorch src/main.go
 
 or run (certainly faster to type 🚀):
