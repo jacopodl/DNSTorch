@@ -1,14 +1,14 @@
 package main
 
 import (
-	"action"
-	"dns"
-	"dthelper"
+	"dnstorch/src/action"
+	"dnstorch/src/dns"
+	"dnstorch/src/dthelper"
 	"flag"
 	"fmt"
 	"net"
 	"os"
-	"resolver"
+	"dnstorch/src/resolver"
 	"time"
 )
 

@@ -1,7 +1,7 @@
 package resolver
 
 import (
-	"dns"
+	"dnstorch/src/dns"
 	"fmt"
 	"strings"
 )

@@ -1,11 +1,11 @@
 package action
 
 import (
-	"dns"
-	"dthelper"
+	"dnstorch/src/dns"
+	"dnstorch/src/dthelper"
 	"fmt"
 	"net"
-	"resolver"
+	"dnstorch/src/resolver"
 )
 
 type dnsbl struct {

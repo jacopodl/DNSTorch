@@ -1,9 +1,9 @@
 package action
 
 import (
-	"dthelper"
+	"dnstorch/src/dthelper"
 	"fmt"
-	"resolver"
+	"dnstorch/src/resolver"
 	"strings"
 	"time"
 )

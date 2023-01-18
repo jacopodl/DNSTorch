@@ -1,7 +1,7 @@
 package dthelper
 
 import (
-	"dns"
+	"dnstorch/src/dns"
 	"fmt"
 	"net"
 	"strconv"

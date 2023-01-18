@@ -1,10 +1,10 @@
 package action
 
 import (
-	"dns"
-	"dthelper"
+	"dnstorch/src/dns"
+	"dnstorch/src/dthelper"
 	"fmt"
-	"resolver"
+	"dnstorch/src/resolver"
 )
 
 type enum struct {
